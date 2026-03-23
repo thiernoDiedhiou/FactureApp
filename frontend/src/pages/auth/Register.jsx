@@ -1,0 +1,147 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import { FileText, User, Mail, Lock, Loader2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+
+export default function Register() {
+  const { t } = useTranslation();
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const errs = {};
+    if (!form.name || form.name.length < 2) errs.name = 'Nom trop court (min. 2 caractères)';
+    if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) errs.email = t('errors.invalidEmail');
+    if (!form.password || form.password.length < 8) errs.password = 'Min. 8 caractères';
+    if (form.password !== form.confirm) errs.confirm = 'Les mots de passe ne correspondent pas';
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setLoading(true);
+    try {
+      await register(form.name, form.email, form.password);
+      toast.success('Compte créé avec succès !');
+      navigate('/');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur lors de l\'inscription');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const field = (key, value) => {
+    setForm(f => ({ ...f, [key]: value }));
+    setErrors(prev => ({ ...prev, [key]: undefined }));
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
+            <FileText className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">FactureApp</h1>
+          <p className="text-gray-500 mt-1">{t('auth.subtitle')}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Créer un compte</h2>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="label">{t('auth.name')}</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={`input-field pl-9 ${errors.name ? 'border-red-500' : ''}`}
+                  placeholder="Mamadou Diallo"
+                  value={form.name}
+                  onChange={(e) => field('name', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="label">{t('auth.email')}</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  className={`input-field pl-9 ${errors.email ? 'border-red-500' : ''}`}
+                  placeholder="email@exemple.sn"
+                  value={form.email}
+                  onChange={(e) => field('email', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="label">{t('auth.password')}</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  className={`input-field pl-9 ${errors.password ? 'border-red-500' : ''}`}
+                  placeholder="Min. 8 caractères"
+                  value={form.password}
+                  onChange={(e) => field('password', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <label className="label">Confirmer le mot de passe</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  className={`input-field pl-9 ${errors.confirm ? 'border-red-500' : ''}`}
+                  placeholder="Confirmer le mot de passe"
+                  value={form.confirm}
+                  onChange={(e) => field('confirm', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              {errors.confirm && <p className="text-red-500 text-xs mt-1">{errors.confirm}</p>}
+            </div>
+
+            <button
+              type="submit"
+              className="btn-primary w-full justify-center py-3 text-base"
+              disabled={loading}
+            >
+              {loading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Création...</>
+              ) : t('auth.registerBtn')}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-500 mt-6">
+            {t('auth.hasAccount')}{' '}
+            <Link to="/login" className="text-primary-600 font-medium hover:underline">
+              {t('auth.loginBtn')}
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

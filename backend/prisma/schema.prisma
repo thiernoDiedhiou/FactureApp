@@ -1,0 +1,155 @@
+// Prisma Schema - FactureApp
+// Application de facturation XOF/UEMOA - Sénégal
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("utilisateur") // admin | utilisateur
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clients       Client[]
+  products      Product[]
+  documents     Document[]
+  settings      Settings?
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Client {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  address     String?
+  phone       String?
+  email       String?
+  companyName String?  @map("company_name")
+  ninea       String? // Numéro fiscal sénégalais
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("clients")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?
+  price       Float    // Prix en XOF
+  tvaRate     Float    @default(18) @map("tva_rate") // TVA Sénégal 18%
+  category    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentItems DocumentItem[]
+
+  @@map("products")
+}
+
+model Document {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  clientId   String    @map("client_id")
+  type       String    // devis | facture | proforma
+  number     String    @unique // Ex: FAC-2024-001
+  status     String    @default("en_attente") // en_attente | paye | annule
+  totalHt    Float     @default(0) @map("total_ht")
+  totalTva   Float     @default(0) @map("total_tva")
+  totalTtc   Float     @default(0) @map("total_ttc")
+  discount   Float     @default(0) // Remise en %
+  issuedDate DateTime  @map("issued_date")
+  dueDate    DateTime? @map("due_date")
+  paidAt     DateTime? @map("paid_at")
+  notes      String?
+  originalId String?   @map("original_id") // Pour les conversions
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client    Client         @relation(fields: [clientId], references: [id])
+  items     DocumentItem[]
+  emailLogs EmailLog[]
+
+  @@map("documents")
+}
+
+model DocumentItem {
+  id          String  @id @default(uuid())
+  documentId  String  @map("document_id")
+  productId   String? @map("product_id")
+  description String
+  quantity    Float
+  unitPrice   Float   @map("unit_price") // Prix unitaire en XOF
+  tvaRate     Float   @map("tva_rate")
+  subtotal    Float   // Montant TTC de la ligne
+
+  document Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product?  @relation(fields: [productId], references: [id])
+
+  @@map("document_items")
+}
+
+model Settings {
+  id              String  @id @default(uuid())
+  userId          String  @unique @map("user_id")
+  logoPath        String? @map("logo_path")
+  companyName     String? @map("company_name")
+  address         String?
+  phone           String?
+  email           String?
+  website         String?
+  ninea           String? // NINEA sénégalais
+  defaultLanguage String  @default("fr") @map("default_language")
+  defaultCurrency String  @default("XOF") @map("default_currency")
+  defaultTvaRate  Float   @default(18) @map("default_tva_rate")
+  documentStyle   String  @default("classique") @map("document_style") // classique | moderne | compact
+  primaryColor    String  @default("#0EA5E9") @map("primary_color")
+  signaturePath   String? @map("signature_path")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model EmailLog {
+  id         String   @id @default(uuid())
+  documentId String   @map("document_id")
+  sentTo     String   @map("sent_to")
+  subject    String
+  body       String?
+  status     String   @default("sent") // sent | failed
+  sentAt     DateTime @default(now()) @map("sent_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("email_logs")
+}
