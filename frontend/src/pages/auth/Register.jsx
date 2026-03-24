@@ -1,22 +1,42 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { FileText, User, Mail, Lock, Loader2 } from 'lucide-react';
+import { FileText, User, Mail, Lock, Loader2, Building2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import api from '../../utils/api';
 
 export default function Register() {
   const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const inviteToken = searchParams.get('invite');
+
+  // Décoder le token d'invitation pour pré-remplir l'email
+  const decodeInvite = (token) => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload;
+    } catch { return null; }
+  };
+  const invitePayload = inviteToken ? decodeInvite(inviteToken) : null;
+
+  const [form, setForm] = useState({
+    name: '',
+    organizationName: '',
+    email: invitePayload?.email || '',
+    password: '',
+    confirm: ''
+  });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
     const errs = {};
     if (!form.name || form.name.length < 2) errs.name = 'Nom trop court (min. 2 caractères)';
+    if (!invitePayload && (!form.organizationName || form.organizationName.length < 2)) errs.organizationName = 'Nom de l\'entreprise requis (min. 2 caractères)';
     if (!form.email || !/\S+@\S+\.\S+/.test(form.email)) errs.email = t('errors.invalidEmail');
     if (!form.password || form.password.length < 8) errs.password = 'Min. 8 caractères';
     if (form.password !== form.confirm) errs.confirm = 'Les mots de passe ne correspondent pas';
@@ -29,9 +49,14 @@ export default function Register() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password);
-      toast.success('Compte créé avec succès !');
-      navigate('/');
+      await api.post('/auth/register', {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        organizationName: form.organizationName || form.name,
+        ...(inviteToken && { inviteToken })
+      });
+      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur lors de l\'inscription');
     } finally {
@@ -51,12 +76,19 @@ export default function Register() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
             <FileText className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">FactureApp</h1>
+          <h1 className="text-3xl font-bold text-gray-900">CFActure</h1>
           <p className="text-gray-500 mt-1">{t('auth.subtitle')}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Créer un compte</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Créer un compte</h2>
+
+          {invitePayload && (
+            <div className="mb-5 p-3 bg-primary-50 border border-primary-200 rounded-lg text-sm text-primary-800">
+              Vous avez été invité par <strong>{invitePayload.inviterName}</strong> à rejoindre{' '}
+              <strong>"{invitePayload.orgName}"</strong>.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -76,16 +108,36 @@ export default function Register() {
             </div>
 
             <div>
+              <label className="label">
+                Nom de l'entreprise
+                {invitePayload && <span className="text-gray-400 font-normal text-xs ml-1">(optionnel)</span>}
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={`input-field pl-9 ${errors.organizationName ? 'border-red-500' : ''}`}
+                  placeholder={invitePayload ? 'Votre nom si pas d\'entreprise' : 'Innosoft Création SARL'}
+                  value={form.organizationName}
+                  onChange={(e) => field('organizationName', e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              {errors.organizationName && <p className="text-red-500 text-xs mt-1">{errors.organizationName}</p>}
+            </div>
+
+            <div>
               <label className="label">{t('auth.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="email"
-                  className={`input-field pl-9 ${errors.email ? 'border-red-500' : ''}`}
+                  className={`input-field pl-9 ${errors.email ? 'border-red-500' : ''} ${invitePayload ? 'bg-gray-50' : ''}`}
                   placeholder="email@exemple.sn"
                   value={form.email}
                   onChange={(e) => field('email', e.target.value)}
-                  disabled={loading}
+                  disabled={loading || !!invitePayload}
+                  readOnly={!!invitePayload}
                 />
               </div>
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}

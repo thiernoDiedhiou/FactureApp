@@ -5,6 +5,8 @@
     "products": "Produits & Services",
     "documents": "Documents",
     "settings": "Paramètres",
+    "organization": "Organisation",
+    "plans": "Plans & Tarifs",
     "logout": "Déconnexion"
   },
   "auth": {

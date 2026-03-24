@@ -46,7 +46,8 @@ const errorHandler = (err, req, res, next) => {
   if (err.statusCode) {
     return res.status(err.statusCode).json({
       success: false,
-      message: err.message
+      message: err.message,
+      ...(err.code ? { code: err.code } : {})
     });
   }
 
@@ -60,9 +61,10 @@ const errorHandler = (err, req, res, next) => {
 };
 
 class AppError extends Error {
-  constructor(message, statusCode) {
+  constructor(message, statusCode, code = null) {
     super(message);
     this.statusCode = statusCode;
+    this.code = code;
     this.name = 'AppError';
   }
 }

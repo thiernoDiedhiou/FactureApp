@@ -1,11 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
-const { startOfMonth, endOfMonth, subMonths, startOfYear } = require('date-fns');
+const { startOfMonth, endOfMonth, subMonths } = require('date-fns');
 
 const prisma = new PrismaClient();
 
 // GET /api/dashboard/stats
 const getStats = async (req, res) => {
-  const userId = req.user.id;
+  const orgId = req.organizationId;
   const now = new Date();
   const startOfCurrentMonth = startOfMonth(now);
 
@@ -20,39 +20,33 @@ const getStats = async (req, res) => {
     recentClients
   ] = await Promise.all([
     prisma.document.aggregate({
-      where: { userId, type: 'facture', status: 'paye' },
+      where: { organizationId: orgId, type: 'facture', status: 'paye' },
       _sum: { totalTtc: true }
     }),
-    prisma.document.count({ where: { userId, type: 'facture', status: 'paye' } }),
-    prisma.document.count({ where: { userId, type: 'facture', status: 'en_attente' } }),
-    prisma.document.count({ where: { userId, type: 'facture', status: 'annule' } }),
-    prisma.document.count({ where: { userId, type: 'devis' } }),
+    prisma.document.count({ where: { organizationId: orgId, type: 'facture', status: 'paye' } }),
+    prisma.document.count({ where: { organizationId: orgId, type: 'facture', status: 'en_attente' } }),
+    prisma.document.count({ where: { organizationId: orgId, type: 'facture', status: 'annule' } }),
+    prisma.document.count({ where: { organizationId: orgId, type: 'devis' } }),
     prisma.document.count({
-      where: {
-        userId,
-        type: 'facture',
-        status: 'en_attente',
-        dueDate: { lt: now }
-      }
+      where: { organizationId: orgId, type: 'facture', status: 'en_attente', dueDate: { lt: now } }
     }),
     prisma.document.findMany({
-      where: { userId },
+      where: { organizationId: orgId },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { client: { select: { name: true } } }
     }),
     prisma.client.findMany({
-      where: { userId },
+      where: { organizationId: orgId },
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { _count: { select: { documents: true } } }
     })
   ]);
 
-  // Chiffre d'affaires du mois courant
   const currentMonthRevenue = await prisma.document.aggregate({
     where: {
-      userId,
+      organizationId: orgId,
       type: 'facture',
       status: 'paye',
       paidAt: { gte: startOfCurrentMonth }
@@ -80,31 +74,22 @@ const getStats = async (req, res) => {
 
 // GET /api/dashboard/revenue-chart
 const getRevenueChart = async (req, res) => {
-  const userId = req.user.id;
-  const months = 12;
+  const orgId = req.organizationId;
   const now = new Date();
   const data = [];
 
-  for (let i = months - 1; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const date = subMonths(now, i);
     const start = startOfMonth(date);
     const end = endOfMonth(date);
 
     const [revenue, invoiceCount] = await Promise.all([
       prisma.document.aggregate({
-        where: {
-          userId,
-          type: 'facture',
-          issuedDate: { gte: start, lte: end }
-        },
+        where: { organizationId: orgId, type: 'facture', issuedDate: { gte: start, lte: end } },
         _sum: { totalTtc: true }
       }),
       prisma.document.count({
-        where: {
-          userId,
-          type: 'facture',
-          issuedDate: { gte: start, lte: end }
-        }
+        where: { organizationId: orgId, type: 'facture', issuedDate: { gte: start, lte: end } }
       })
     ]);
 
@@ -123,7 +108,7 @@ const getRevenueChart = async (req, res) => {
 const getOverdueDocuments = async (req, res) => {
   const documents = await prisma.document.findMany({
     where: {
-      userId: req.user.id,
+      organizationId: req.organizationId,
       type: 'facture',
       status: 'en_attente',
       dueDate: { lt: new Date() }

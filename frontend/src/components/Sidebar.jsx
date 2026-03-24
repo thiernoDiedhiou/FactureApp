@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Users, Package, FileText, Settings,
-  LogOut, FileText as Logo, X, ChevronRight
+  LogOut, FileText as Logo, X, ChevronRight, Building2, Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/clients', icon: Users, key: 'clients' },
   { to: '/products', icon: Package, key: 'products' },
   { to: '/documents', icon: FileText, key: 'documents' },
+  { to: '/organization', icon: Building2, key: 'organization' },
 ];
 
 export default function Sidebar({ onClose }) {
@@ -50,7 +51,7 @@ export default function Sidebar({ onClose }) {
           )}
           <div>
             <h1 className="font-bold text-sm leading-tight">
-              {settings.companyName || 'FactureApp'}
+              {settings.companyName || 'CFActure'}
             </h1>
             <p className="text-gray-400 text-xs">{settings.defaultCurrency || 'XOF'}</p>
           </div>
@@ -92,6 +93,21 @@ export default function Sidebar({ onClose }) {
 
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-gray-700 space-y-1">
+        <NavLink
+          to="/plans"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-amber-500 text-white'
+                : 'text-amber-400 hover:bg-amber-900/30 hover:text-amber-300'
+            }`
+          }
+        >
+          <Zap className="w-5 h-5" />
+          <span>{t('nav.plans')}</span>
+        </NavLink>
+
         <NavLink
           to="/settings"
           onClick={onClose}

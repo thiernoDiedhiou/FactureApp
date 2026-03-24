@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
@@ -44,10 +44,28 @@ export default function Settings() {
     ninea: settings.ninea || '',
     defaultLanguage: settings.defaultLanguage || 'fr',
     defaultCurrency: settings.defaultCurrency || 'XOF',
-    defaultTvaRate: settings.defaultTvaRate || 18,
+    defaultTvaRate: settings.defaultTvaRate ?? 18,
     documentStyle: settings.documentStyle || 'classique',
     primaryColor: settings.primaryColor || '#0EA5E9'
   });
+  // Syncer le formulaire quand les settings sont chargés depuis l'API (settings.id disponible)
+  useEffect(() => {
+    if (!settings.id) return;
+    setForm({
+      companyName: settings.companyName || '',
+      address: settings.address || '',
+      phone: settings.phone || '',
+      email: settings.email || '',
+      website: settings.website || '',
+      ninea: settings.ninea || '',
+      defaultLanguage: settings.defaultLanguage || 'fr',
+      defaultCurrency: settings.defaultCurrency || 'XOF',
+      defaultTvaRate: settings.defaultTvaRate ?? 18,
+      documentStyle: settings.documentStyle || 'classique',
+      primaryColor: settings.primaryColor || '#0EA5E9'
+    });
+  }, [settings.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({ logo: false, sig: false });
 

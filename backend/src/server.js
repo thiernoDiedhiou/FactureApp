@@ -10,7 +10,7 @@ async function main() {
     console.log('✅ Base de données connectée');
 
     app.listen(PORT, () => {
-      console.log(`🚀 FactureApp API démarrée sur http://localhost:${PORT}`);
+      console.log(`🚀 CFActure API démarrée sur http://localhost:${PORT}`);
       console.log(`📊 Mode: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {

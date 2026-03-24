@@ -1,6 +1,6 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Plus, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { Menu, Plus, ChevronDown, Settings, LogOut, Building2, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
@@ -9,7 +9,9 @@ const breadcrumbMap = {
   '/clients': 'clients',
   '/products': 'products',
   '/documents': 'documents',
-  '/settings': 'settings'
+  '/settings': 'settings',
+  '/organization': 'organization',
+  '/plans': 'plans'
 };
 
 const quickActions = {
@@ -20,10 +22,11 @@ const quickActions = {
 
 export default function Header({ onMenuClick }) {
   const { t } = useTranslation();
-  const { user, logout } = useAuth();
+  const { user, organization, organizations, logout, switchOrganization } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [switching, setSwitching] = useState(null);
   const dropdownRef = useRef(null);
 
   const path = '/' + location.pathname.split('/')[1];
@@ -45,6 +48,20 @@ export default function Header({ onMenuClick }) {
     setDropdownOpen(false);
     await logout();
     navigate('/login');
+  };
+
+  const handleSwitch = async (orgId) => {
+    if (orgId === organization?.id || switching) return;
+    setSwitching(orgId);
+    try {
+      await switchOrganization(orgId);
+      setDropdownOpen(false);
+      navigate('/');
+    } catch {
+      // error already handled in switchOrganization
+    } finally {
+      setSwitching(null);
+    }
   };
 
   return (
@@ -93,15 +110,67 @@ export default function Header({ onMenuClick }) {
 
           {/* Dropdown menu */}
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
               {/* User info */}
               <div className="px-4 py-3 border-b border-gray-100">
                 <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                {organization && (
+                  <p className="text-xs text-primary-600 font-medium truncate mt-0.5">{organization.name}</p>
+                )}
               </div>
+
+              {/* Org switcher — affiché seulement si plusieurs orgs */}
+              {organizations?.length > 1 && (
+                <div className="border-b border-gray-100">
+                  <p className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    Organisations
+                  </p>
+                  {organizations.map((org) => {
+                    const isActive = org.id === organization?.id;
+                    return (
+                      <button
+                        key={org.id}
+                        onClick={() => handleSwitch(org.id)}
+                        disabled={isActive || !!switching}
+                        className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                          isActive
+                            ? 'text-primary-700 bg-primary-50'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4 flex-shrink-0 text-gray-400" />
+                        <span className="flex-1 text-left truncate">{org.name}</span>
+                        {switching === org.id
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-500" />
+                          : isActive && <Check className="w-3.5 h-3.5 text-primary-600" />
+                        }
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="py-1">
+                {user?.isSuperAdmin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 transition-colors font-medium"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-500" />
+                    Administration
+                  </Link>
+                )}
+                <Link
+                  to="/organization"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Building2 className="w-4 h-4 text-gray-400" />
+                  Organisation
+                </Link>
                 <Link
                   to="/settings"
                   onClick={() => setDropdownOpen(false)}

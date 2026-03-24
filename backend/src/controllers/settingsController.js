@@ -22,13 +22,13 @@ const settingsSchema = z.object({
 // GET /api/settings
 const getSettings = async (req, res) => {
   let settings = await prisma.settings.findUnique({
-    where: { userId: req.user.id }
+    where: { organizationId: req.organizationId }
   });
 
   if (!settings) {
     settings = await prisma.settings.create({
       data: {
-        userId: req.user.id,
+        organizationId: req.organizationId,
         defaultTvaRate: 18,
         defaultCurrency: 'XOF',
         defaultLanguage: 'fr',
@@ -46,9 +46,9 @@ const updateSettings = async (req, res) => {
   const data = settingsSchema.parse(req.body);
 
   const settings = await prisma.settings.upsert({
-    where: { userId: req.user.id },
+    where: { organizationId: req.organizationId },
     update: data,
-    create: { ...data, userId: req.user.id }
+    create: { ...data, organizationId: req.organizationId }
   });
 
   res.json({ success: true, message: 'Paramètres mis à jour', data: { settings } });
@@ -60,19 +60,17 @@ const uploadLogo = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Fichier image requis' });
   }
 
-  // Delete old logo if exists
-  const existing = await prisma.settings.findUnique({ where: { userId: req.user.id } });
+  const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
   if (existing?.logoPath) {
     const oldPath = path.join(__dirname, '../../uploads', existing.logoPath.replace('/uploads/', ''));
     if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
   }
 
   const logoPath = `/uploads/${req.file.filename}`;
-
   const settings = await prisma.settings.upsert({
-    where: { userId: req.user.id },
+    where: { organizationId: req.organizationId },
     update: { logoPath },
-    create: { userId: req.user.id, logoPath }
+    create: { organizationId: req.organizationId, logoPath }
   });
 
   res.json({ success: true, message: 'Logo uploadé', data: { logoPath, settings } });
@@ -84,18 +82,17 @@ const uploadSignature = async (req, res) => {
     return res.status(400).json({ success: false, message: 'Fichier image requis' });
   }
 
-  const existing = await prisma.settings.findUnique({ where: { userId: req.user.id } });
+  const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
   if (existing?.signaturePath) {
     const oldPath = path.join(__dirname, '../../uploads', existing.signaturePath.replace('/uploads/', ''));
     if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
   }
 
   const signaturePath = `/uploads/${req.file.filename}`;
-
   const settings = await prisma.settings.upsert({
-    where: { userId: req.user.id },
+    where: { organizationId: req.organizationId },
     update: { signaturePath },
-    create: { userId: req.user.id, signaturePath }
+    create: { organizationId: req.organizationId, signaturePath }
   });
 
   res.json({ success: true, message: 'Signature uploadée', data: { signaturePath, settings } });
@@ -103,29 +100,23 @@ const uploadSignature = async (req, res) => {
 
 // DELETE /api/settings/logo
 const deleteLogo = async (req, res) => {
-  const existing = await prisma.settings.findUnique({ where: { userId: req.user.id } });
+  const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
   if (existing?.logoPath) {
     const filePath = path.join(__dirname, '../../', existing.logoPath);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
-  await prisma.settings.update({
-    where: { userId: req.user.id },
-    data: { logoPath: null }
-  });
+  await prisma.settings.update({ where: { organizationId: req.organizationId }, data: { logoPath: null } });
   res.json({ success: true, message: 'Logo supprimé' });
 };
 
 // DELETE /api/settings/signature
 const deleteSignature = async (req, res) => {
-  const existing = await prisma.settings.findUnique({ where: { userId: req.user.id } });
+  const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
   if (existing?.signaturePath) {
     const filePath = path.join(__dirname, '../../', existing.signaturePath);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   }
-  await prisma.settings.update({
-    where: { userId: req.user.id },
-    data: { signaturePath: null }
-  });
+  await prisma.settings.update({ where: { organizationId: req.organizationId }, data: { signaturePath: null } });
   res.json({ success: true, message: 'Signature supprimée' });
 };
 

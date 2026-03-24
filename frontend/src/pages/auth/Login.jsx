@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { FileText, Mail, Lock, Loader2 } from 'lucide-react';
@@ -13,6 +13,16 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('verified') === '1') {
+      toast.success('Email vérifié ! Vous pouvez maintenant vous connecter.');
+    }
+    if (searchParams.get('reset') === '1') {
+      toast.success('Mot de passe réinitialisé ! Connectez-vous avec votre nouveau mot de passe.');
+    }
+  }, []);
 
   const validate = () => {
     const errs = {};
@@ -32,7 +42,11 @@ export default function Login() {
       toast.success('Connexion réussie !');
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Identifiants incorrects');
+      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        navigate(`/verify-email?email=${encodeURIComponent(err.response.data.data?.email || form.email)}`);
+      } else {
+        toast.error(err.response?.data?.message || 'Identifiants incorrects');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,18 +60,13 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
             <FileText className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">FactureApp</h1>
+          <h1 className="text-3xl font-bold text-gray-900">CFActure</h1>
           <p className="text-gray-500 mt-1">{t('auth.subtitle')}</p>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('auth.login')}</h2>
-
-          {/* Demo credentials */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-            <strong>Demo :</strong> demo@factureapp.sn / password123
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -77,7 +86,12 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="label">{t('auth.password')}</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">{t('auth.password')}</label>
+                <Link to="/forgot-password" className="text-xs text-primary-600 hover:underline">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input

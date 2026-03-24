@@ -4,9 +4,13 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const generateTokens = async (userId) => {
+/**
+ * Génère un access token + refresh token pour un utilisateur
+ * Le JWT embarque userId, organizationId et le rôle dans l'org
+ */
+const generateTokens = async (userId, organizationId, orgRole) => {
   const accessToken = jwt.sign(
-    { userId },
+    { userId, organizationId, orgRole },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
@@ -16,11 +20,7 @@ const generateTokens = async (userId) => {
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   await prisma.refreshToken.create({
-    data: {
-      userId,
-      token: refreshToken,
-      expiresAt
-    }
+    data: { userId, token: refreshToken, expiresAt }
   });
 
   return { accessToken, refreshToken };
@@ -29,7 +29,19 @@ const generateTokens = async (userId) => {
 const verifyRefreshToken = async (token) => {
   const stored = await prisma.refreshToken.findUnique({
     where: { token },
-    include: { user: { select: { id: true, name: true, email: true, role: true } } }
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          memberships: {
+            include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
+            orderBy: { createdAt: 'asc' }
+          }
+        }
+      }
+    }
   });
 
   if (!stored) throw new Error('Token de rafraîchissement invalide');
@@ -49,9 +61,4 @@ const revokeAllUserTokens = async (userId) => {
   await prisma.refreshToken.deleteMany({ where: { userId } });
 };
 
-module.exports = {
-  generateTokens,
-  verifyRefreshToken,
-  revokeRefreshToken,
-  revokeAllUserTokens
-};
+module.exports = { generateTokens, verifyRefreshToken, revokeRefreshToken, revokeAllUserTokens };

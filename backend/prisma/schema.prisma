@@ -1,4 +1,4 @@
-// Prisma Schema - FactureApp
+// Prisma Schema - FactureApp Multi-Tenant
 // Application de facturation XOF/UEMOA - Sénégal
 
 generator client {
@@ -6,87 +6,162 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
+// ========================
+// Enums
+// ========================
+
+enum Plan {
+  FREE       // 10 docs, 5 clients, 1 utilisateur
+  STARTER    // 100 docs, 50 clients, 3 utilisateurs
+  PRO        // illimité, 10 utilisateurs
+  ENTERPRISE // illimité, utilisateurs illimités
+}
+
+enum MemberRole {
+  OWNER  // créateur : droits complets + gestion plan
+  ADMIN  // droits complets sauf facturation
+  MEMBER // création + lecture, pas de suppression
+}
+
+// ========================
+// Organisation (tenant)
+// ========================
+
+model Organization {
   id        String   @id @default(uuid())
   name      String
-  email     String   @unique
-  password  String
-  role      String   @default("utilisateur") // admin | utilisateur
+  slug      String   @unique // ex: innosoft-creation
+  plan      Plan     @default(FREE)
+  suspended Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  clients       Client[]
-  products      Product[]
-  documents     Document[]
-  settings      Settings?
+  members         OrganizationMember[]
+  clients         Client[]
+  products        Product[]
+  documents       Document[]
+  settings        Settings?
+  upgradeRequests UpgradeRequest[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String     @id @default(uuid())
+  organizationId String     @map("organization_id")
+  userId         String     @map("user_id")
+  role           MemberRole @default(MEMBER)
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+// ========================
+// Utilisateur (identité globale)
+// ========================
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  isSuperAdmin        Boolean   @default(false) @map("is_super_admin")
+  isEmailVerified     Boolean   @default(false) @map("is_email_verified")
+  emailVerifyToken    String?   @unique @map("email_verify_token")
+  passwordResetToken  String?   @unique @map("password_reset_token")
+  passwordResetExpiry DateTime? @map("password_reset_expiry")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  memberships   OrganizationMember[]
   refreshTokens RefreshToken[]
+  documents     Document[]           @relation("CreatedBy")
 
   @@map("users")
 }
 
-model Client {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String
-  address     String?
-  phone       String?
-  email       String?
-  companyName String?  @map("company_name")
-  ninea       String? // Numéro fiscal sénégalais
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+// ========================
+// Clients (appartiennent à l'organisation)
+// ========================
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents Document[]
+model Client {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  name           String
+  address        String?
+  phone          String?
+  email          String?
+  companyName    String?  @map("company_name")
+  ninea          String?  // Numéro fiscal sénégalais
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents    Document[]
 
   @@map("clients")
 }
 
-model Product {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String
-  description String?
-  price       Float    // Prix en XOF
-  tvaRate     Float    @default(18) @map("tva_rate") // TVA Sénégal 18%
-  category    String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+// ========================
+// Produits & Services
+// ========================
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Product {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  name           String
+  description    String?
+  price          Float    // Prix en XOF
+  tvaRate        Float    @default(18) @map("tva_rate") // TVA Sénégal 18%
+  category       String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   documentItems DocumentItem[]
 
   @@map("products")
 }
 
+// ========================
+// Documents (Factures, Devis, Proforma)
+// ========================
+
 model Document {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  clientId   String    @map("client_id")
-  type       String    // devis | facture | proforma
-  number     String    @unique // Ex: FAC-2024-001
-  status     String    @default("en_attente") // en_attente | paye | annule
-  totalHt    Float     @default(0) @map("total_ht")
-  totalTva   Float     @default(0) @map("total_tva")
-  totalTtc   Float     @default(0) @map("total_ttc")
-  discount   Float     @default(0) // Remise en %
-  issuedDate DateTime  @map("issued_date")
-  dueDate    DateTime? @map("due_date")
-  paidAt     DateTime? @map("paid_at")
-  notes      String?
-  originalId String?   @map("original_id") // Pour les conversions
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  clientId       String    @map("client_id")
+  createdBy      String    @map("created_by") // userId pour audit
+  type           String    // devis | facture | proforma
+  number         String    // Ex: FAC-2024-001 (unique par org)
+  status         String    @default("en_attente") // en_attente | paye | annule
+  totalHt        Float     @default(0) @map("total_ht")
+  totalTva       Float     @default(0) @map("total_tva")
+  totalTtc       Float     @default(0) @map("total_ttc")
+  discount       Float     @default(0) // Remise en %
+  issuedDate     DateTime  @map("issued_date")
+  dueDate        DateTime? @map("due_date")
+  paidAt         DateTime? @map("paid_at")
+  notes          String?
+  originalId     String?   @map("original_id") // Pour les conversions/duplications
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client    Client         @relation(fields: [clientId], references: [id])
-  items     DocumentItem[]
-  emailLogs EmailLog[]
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client         @relation(fields: [clientId], references: [id])
+  creator      User           @relation("CreatedBy", fields: [createdBy], references: [id])
+  items        DocumentItem[]
+  emailLogs    EmailLog[]
 
+  @@unique([organizationId, number]) // numérotation unique par organisation
   @@map("documents")
 }
 
@@ -106,9 +181,13 @@ model DocumentItem {
   @@map("document_items")
 }
 
+// ========================
+// Paramètres (niveau organisation)
+// ========================
+
 model Settings {
   id              String  @id @default(uuid())
-  userId          String  @unique @map("user_id")
+  organizationId  String  @unique @map("organization_id")
   logoPath        String? @map("logo_path")
   companyName     String? @map("company_name")
   address         String?
@@ -119,14 +198,37 @@ model Settings {
   defaultLanguage String  @default("fr") @map("default_language")
   defaultCurrency String  @default("XOF") @map("default_currency")
   defaultTvaRate  Float   @default(18) @map("default_tva_rate")
-  documentStyle   String  @default("classique") @map("document_style") // classique | moderne | compact
+  documentStyle   String  @default("classique") @map("document_style")
   primaryColor    String  @default("#0EA5E9") @map("primary_color")
   signaturePath   String? @map("signature_path")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("settings")
 }
+
+// ========================
+// Configuration des plans (géré par Super Admin)
+// ========================
+
+model PlanConfig {
+  id           String   @id @default(uuid())
+  key          Plan     @unique // FREE | STARTER | PRO | ENTERPRISE
+  price        Int      @default(0)    // Prix en FCFA/mois (0 = gratuit)
+  maxMembers   Int      @default(1)    // -1 = illimité
+  maxDocuments Int      @default(10)   @map("max_documents") // -1 = illimité
+  maxClients   Int      @default(5)    @map("max_clients")   // -1 = illimité
+  description  String   @default("")
+  features     Json     @default("[]") // Liste affichée sur la page Plans
+  isActive     Boolean  @default(true) @map("is_active")
+  updatedAt    DateTime @updatedAt     @map("updated_at")
+
+  @@map("plan_configs")
+}
+
+// ========================
+// Auth
+// ========================
 
 model RefreshToken {
   id        String   @id @default(uuid())
@@ -138,6 +240,42 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+// ========================
+// Demandes de mise à niveau de plan
+// ========================
+
+model UpgradeRequest {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  targetPlan     Plan      @map("target_plan")
+  amount         Int       // montant en FCFA
+  paymentMethod  String    @map("payment_method") // wave | orange_money | free_money | cash
+  transactionRef String?   @map("transaction_ref")
+  status         String    @default("pending")    // pending | validated | rejected
+  notes          String?   // note admin (raison rejet)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  processedAt    DateTime? @map("processed_at")
+  processedBy    String?   @map("processed_by")  // userId super admin
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("upgrade_requests")
+}
+
+// ========================
+// Configuration globale de la plateforme (Super Admin)
+// ========================
+
+model PlatformConfig {
+  id           String   @id @default(uuid())
+  paymentPhone String   @default("+221 77 328 73 76") @map("payment_phone")
+  paymentName  String   @default("FactureApp")        @map("payment_name")
+  supportEmail String   @default("contact@factureapp.sn") @map("support_email")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_config")
 }
 
 model EmailLog {

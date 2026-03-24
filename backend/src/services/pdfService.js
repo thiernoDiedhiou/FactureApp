@@ -52,7 +52,7 @@ const generatePDF = (document, settings, style = null) => {
       margin: 50,
       info: {
         Title: `${document.number} - ${document.client?.name}`,
-        Author: settings?.companyName || 'FactureApp',
+        Author: settings?.companyName || 'CFActure',
         Subject: TYPE_LABELS[document.type] || 'Document'
       }
     });
@@ -388,14 +388,14 @@ function renderFooter(doc, settings) {
   doc.moveTo(50, y).lineTo(545, y).strokeColor('#cccccc').lineWidth(0.5).stroke();
   doc.fontSize(7).font('Helvetica').fillColor('#999999')
     .text(
-      `${settings?.companyName || 'FactureApp'} | ${settings?.address || ''} | ${settings?.phone || ''} | ${settings?.email || ''}`,
+      `${settings?.companyName || 'CFActure'} | ${settings?.address || ''} | ${settings?.phone || ''} | ${settings?.email || ''}`,
       50, y + 8, { align: 'center', width: 495 }
     );
   if (settings?.ninea) {
     doc.text(`NINEA: ${settings.ninea} | ${settings?.website || ''}`,
       50, y + 20, { align: 'center', width: 495 });
   }
-  doc.text('Document généré par FactureApp', 50, y + 32, { align: 'center', width: 495 });
+  doc.text('Document généré par CFActure', 50, y + 32, { align: 'center', width: 495 });
 }
 
 const fmtNum = (n) => Math.round(n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');

@@ -5,6 +5,10 @@ import Layout from './components/Layout';
 // Auth pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import AcceptInvite from './pages/auth/AcceptInvite';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 // Protected pages
 import Dashboard from './pages/Dashboard';
@@ -17,8 +21,17 @@ import DocumentList from './pages/documents/DocumentList';
 import DocumentForm from './pages/documents/DocumentForm';
 import DocumentDetail from './pages/documents/DocumentDetail';
 import Settings from './pages/Settings';
+import Organization from './pages/Organization';
+import Plans from './pages/Plans';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOrganizations from './pages/admin/AdminOrganizations';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPlans from './pages/admin/AdminPlans';
+import AdminUpgrades from './pages/admin/AdminUpgrades';
+import AdminSettings from './pages/admin/AdminSettings';
 
-const PrivateRoute = ({ children }) => {
+const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -32,7 +45,9 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  return user ? children : <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (needSuperAdmin && !user.isSuperAdmin) return <Navigate to="/" replace />;
+  return children;
 };
 
 const PublicRoute = ({ children }) => {
@@ -47,6 +62,11 @@ export default function App() {
       {/* Public routes */}
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/verify-email/confirm/:token" element={<VerifyEmail />} />
+      <Route path="/accept-invite" element={<AcceptInvite />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       {/* Protected routes */}
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
@@ -71,6 +91,26 @@ export default function App() {
 
         {/* Paramètres */}
         <Route path="settings" element={<Settings />} />
+
+        {/* Organisation */}
+        <Route path="organization" element={<Organization />} />
+
+        {/* Plans */}
+        <Route path="plans" element={<Plans />} />
+      </Route>
+
+      {/* Admin — layout séparé, protégé super admin */}
+      <Route path="/admin" element={
+        <PrivateRoute requireSuperAdmin>
+          <AdminLayout />
+        </PrivateRoute>
+      }>
+        <Route index element={<AdminDashboard />} />
+        <Route path="organizations" element={<AdminOrganizations />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="plans" element={<AdminPlans />} />
+        <Route path="upgrades" element={<AdminUpgrades />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       {/* Catch all */}

@@ -46,7 +46,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    app: 'FactureApp API',
+    app: 'CFActure API',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });

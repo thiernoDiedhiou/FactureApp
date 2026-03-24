@@ -3,6 +3,7 @@ const { z } = require('zod');
 const { AppError } = require('../middlewares/errorHandler');
 const { generateDocumentNumber } = require('../utils/documentNumber');
 const { calculateDocumentTotals } = require('../utils/formatCFA');
+const { checkPlanLimit } = require('../utils/planLimits');
 
 const prisma = new PrismaClient();
 
@@ -28,28 +29,25 @@ const documentSchema = z.object({
 const include = {
   client: true,
   items: { include: { product: true } },
-  emailLogs: { orderBy: { sentAt: 'desc' } }
+  emailLogs: { orderBy: { sentAt: 'desc' } },
+  creator: { select: { id: true, name: true, email: true } }
 };
 
 // GET /api/documents
 const getDocuments = async (req, res) => {
-  const {
-    search = '', page = 1, limit = 10,
-    type, status, clientId,
-    dateFrom, dateTo
-  } = req.query;
+  const { search = '', page = 1, limit = 10, type, status, clientId, dateFrom, dateTo } = req.query;
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const where = {
-    userId: req.user.id,
+    organizationId: req.organizationId,
     ...(type ? { type } : {}),
     ...(status ? { status } : {}),
     ...(clientId ? { clientId } : {}),
     ...(search ? {
       OR: [
-        { number: { contains: search } },
-        { client: { name: { contains: search } } },
-        { notes: { contains: search } }
+        { number: { contains: search, mode: 'insensitive' } },
+        { client: { name: { contains: search, mode: 'insensitive' } } },
+        { notes: { contains: search, mode: 'insensitive' } }
       ]
     } : {}),
     ...(dateFrom || dateTo ? {
@@ -75,12 +73,7 @@ const getDocuments = async (req, res) => {
     success: true,
     data: {
       documents,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
     }
   });
 };
@@ -88,7 +81,7 @@ const getDocuments = async (req, res) => {
 // GET /api/documents/:id
 const getDocument = async (req, res) => {
   const document = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id },
+    where: { id: req.params.id, organizationId: req.organizationId },
     include
   });
   if (!document) throw new AppError('Document non trouvé', 404);
@@ -97,28 +90,27 @@ const getDocument = async (req, res) => {
 
 // POST /api/documents
 const createDocument = async (req, res) => {
+  await checkPlanLimit(req.organizationId, 'document');
+
   const data = documentSchema.parse(req.body);
 
   const client = await prisma.client.findFirst({
-    where: { id: data.clientId, userId: req.user.id }
+    where: { id: data.clientId, organizationId: req.organizationId }
   });
   if (!client) throw new AppError('Client non trouvé', 404);
 
-  const number = await generateDocumentNumber(data.type, req.user.id);
-  const { items, totalHt, totalTva, totalTtc } = calculateDocumentTotals(
-    data.items, data.discount
-  );
+  const number = await generateDocumentNumber(data.type, req.organizationId);
+  const { items, totalHt, totalTva, totalTtc } = calculateDocumentTotals(data.items, data.discount);
 
   const document = await prisma.document.create({
     data: {
-      userId: req.user.id,
+      organizationId: req.organizationId,
       clientId: data.clientId,
+      createdBy: req.user.id,
       type: data.type,
       number,
       status: data.status,
-      totalHt,
-      totalTva,
-      totalTtc,
+      totalHt, totalTva, totalTtc,
       discount: data.discount,
       issuedDate: new Date(data.issuedDate),
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
@@ -143,17 +135,13 @@ const createDocument = async (req, res) => {
 // PUT /api/documents/:id
 const updateDocument = async (req, res) => {
   const existing = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!existing) throw new AppError('Document non trouvé', 404);
-  if (existing.status === 'paye') {
-    throw new AppError('Impossible de modifier un document payé', 400);
-  }
+  if (existing.status === 'paye') throw new AppError('Impossible de modifier un document payé', 400);
 
   const data = documentSchema.parse(req.body);
-  const { items, totalHt, totalTva, totalTtc } = calculateDocumentTotals(
-    data.items, data.discount
-  );
+  const { items, totalHt, totalTva, totalTtc } = calculateDocumentTotals(data.items, data.discount);
 
   await prisma.documentItem.deleteMany({ where: { documentId: req.params.id } });
 
@@ -162,9 +150,7 @@ const updateDocument = async (req, res) => {
     data: {
       clientId: data.clientId,
       status: data.status,
-      totalHt,
-      totalTva,
-      totalTtc,
+      totalHt, totalTva, totalTtc,
       discount: data.discount,
       issuedDate: new Date(data.issuedDate),
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
@@ -195,16 +181,13 @@ const updateStatus = async (req, res) => {
 
   const { status, paidAt } = schema.parse(req.body);
   const existing = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!existing) throw new AppError('Document non trouvé', 404);
 
   const document = await prisma.document.update({
     where: { id: req.params.id },
-    data: {
-      status,
-      paidAt: status === 'paye' ? (paidAt ? new Date(paidAt) : new Date()) : null
-    },
+    data: { status, paidAt: status === 'paye' ? (paidAt ? new Date(paidAt) : new Date()) : null },
     include: { client: true }
   });
 
@@ -213,29 +196,24 @@ const updateStatus = async (req, res) => {
 
 // POST /api/documents/:id/convert
 const convertDocument = async (req, res) => {
-  const schema = z.object({
-    type: z.enum(['facture', 'devis', 'proforma'])
-  });
-  const { type } = schema.parse(req.body);
+  const { type } = z.object({ type: z.enum(['facture', 'devis', 'proforma']) }).parse(req.body);
 
   const original = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id },
+    where: { id: req.params.id, organizationId: req.organizationId },
     include: { items: true }
   });
   if (!original) throw new AppError('Document non trouvé', 404);
 
-  const number = await generateDocumentNumber(type, req.user.id);
+  const number = await generateDocumentNumber(type, req.organizationId);
 
   const document = await prisma.document.create({
     data: {
-      userId: req.user.id,
+      organizationId: req.organizationId,
       clientId: original.clientId,
-      type,
-      number,
+      createdBy: req.user.id,
+      type, number,
       status: 'en_attente',
-      totalHt: original.totalHt,
-      totalTva: original.totalTva,
-      totalTtc: original.totalTtc,
+      totalHt: original.totalHt, totalTva: original.totalTva, totalTtc: original.totalTtc,
       discount: original.discount,
       issuedDate: new Date(),
       dueDate: original.dueDate,
@@ -255,33 +233,27 @@ const convertDocument = async (req, res) => {
     include
   });
 
-  res.status(201).json({
-    success: true,
-    message: `Document converti en ${type}`,
-    data: { document }
-  });
+  res.status(201).json({ success: true, message: `Document converti en ${type}`, data: { document } });
 };
 
 // POST /api/documents/:id/duplicate
 const duplicateDocument = async (req, res) => {
   const original = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id },
+    where: { id: req.params.id, organizationId: req.organizationId },
     include: { items: true }
   });
   if (!original) throw new AppError('Document non trouvé', 404);
 
-  const number = await generateDocumentNumber(original.type, req.user.id);
+  const number = await generateDocumentNumber(original.type, req.organizationId);
 
   const document = await prisma.document.create({
     data: {
-      userId: req.user.id,
+      organizationId: req.organizationId,
       clientId: original.clientId,
-      type: original.type,
-      number,
+      createdBy: req.user.id,
+      type: original.type, number,
       status: 'en_attente',
-      totalHt: original.totalHt,
-      totalTva: original.totalTva,
-      totalTtc: original.totalTtc,
+      totalHt: original.totalHt, totalTva: original.totalTva, totalTtc: original.totalTtc,
       discount: original.discount,
       issuedDate: new Date(),
       dueDate: original.dueDate,
@@ -306,7 +278,7 @@ const duplicateDocument = async (req, res) => {
 // DELETE /api/documents/:id
 const deleteDocument = async (req, res) => {
   const existing = await prisma.document.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!existing) throw new AppError('Document non trouvé', 404);
 

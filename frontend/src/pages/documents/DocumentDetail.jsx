@@ -84,7 +84,8 @@ export default function DocumentDetail() {
     // Numéro en format international sans +, ex: 221771234567
     const rawPhone = doc.client?.phone?.replace(/[\s\-().]/g, '') || '';
     const phone = rawPhone.startsWith('+') ? rawPhone.slice(1) : rawPhone;
-    const message = `Bonjour${clientName ? ` ${clientName}` : ''},\n\nVeuillez trouver en pièce jointe votre ${typeLabel} N° ${doc.number} d'un montant de ${total}.\n\nCordialement,`;
+    const companyName = settings?.companyName || '';
+    const message = `Bonjour${clientName ? ` ${clientName}` : ''},\n\nVeuillez trouver en pièce jointe votre ${typeLabel} N° ${doc.number} d'un montant de ${total}.\n\nCordialement,\n${companyName}`;
 
     // Essai partage natif avec le fichier PDF (fonctionne sur mobile)
     if (navigator.canShare) {
@@ -103,12 +104,24 @@ export default function DocumentDetail() {
       }
     }
 
-    // Fallback : lien wa.me avec message texte (desktop / navigateurs sans Web Share)
-    const encoded = encodeURIComponent(message);
-    const url = phone
-      ? `https://wa.me/${phone}?text=${encoded}`
-      : `https://wa.me/?text=${encoded}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Fallback desktop : générer un lien PDF temporaire (7j) puis ouvrir WhatsApp
+    try {
+      const { data } = await api.post(`/documents/${id}/share-link`);
+      const pdfLink = data.data.link;
+      const msgWithLink = `${message}\n\n📄 PDF : ${pdfLink}`;
+      const encoded = encodeURIComponent(msgWithLink);
+      const url = phone
+        ? `https://wa.me/${phone}?text=${encoded}`
+        : `https://wa.me/?text=${encoded}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      // Si la génération du lien échoue, envoyer quand même le message texte
+      const encoded = encodeURIComponent(message);
+      const url = phone
+        ? `https://wa.me/${phone}?text=${encoded}`
+        : `https://wa.me/?text=${encoded}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleSendEmail = async (e) => {

@@ -18,24 +18,19 @@ const getProducts = async (req, res) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const where = {
-    userId: req.user.id,
+    organizationId: req.organizationId,
     ...(search ? {
       OR: [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { category: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { category: { contains: search, mode: 'insensitive' } }
       ]
     } : {}),
     ...(category ? { category } : {})
   };
 
   const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      skip,
-      take: parseInt(limit)
-    }),
+    prisma.product.findMany({ where, orderBy: { name: 'asc' }, skip, take: parseInt(limit) }),
     prisma.product.count({ where })
   ]);
 
@@ -43,12 +38,7 @@ const getProducts = async (req, res) => {
     success: true,
     data: {
       products,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit))
-      }
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
     }
   });
 };
@@ -56,20 +46,17 @@ const getProducts = async (req, res) => {
 // GET /api/products/categories
 const getCategories = async (req, res) => {
   const categories = await prisma.product.findMany({
-    where: { userId: req.user.id, category: { not: null } },
+    where: { organizationId: req.organizationId, category: { not: null } },
     select: { category: true },
     distinct: ['category']
   });
-  res.json({
-    success: true,
-    data: { categories: categories.map(c => c.category).filter(Boolean) }
-  });
+  res.json({ success: true, data: { categories: categories.map(c => c.category).filter(Boolean) } });
 };
 
 // GET /api/products/:id
 const getProduct = async (req, res) => {
   const product = await prisma.product.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!product) throw new AppError('Produit non trouvé', 404);
   res.json({ success: true, data: { product } });
@@ -79,7 +66,7 @@ const getProduct = async (req, res) => {
 const createProduct = async (req, res) => {
   const data = productSchema.parse(req.body);
   const product = await prisma.product.create({
-    data: { ...data, userId: req.user.id }
+    data: { ...data, organizationId: req.organizationId }
   });
   res.status(201).json({ success: true, message: 'Produit créé', data: { product } });
 };
@@ -87,22 +74,19 @@ const createProduct = async (req, res) => {
 // PUT /api/products/:id
 const updateProduct = async (req, res) => {
   const existing = await prisma.product.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!existing) throw new AppError('Produit non trouvé', 404);
 
   const data = productSchema.parse(req.body);
-  const product = await prisma.product.update({
-    where: { id: req.params.id },
-    data
-  });
+  const product = await prisma.product.update({ where: { id: req.params.id }, data });
   res.json({ success: true, message: 'Produit mis à jour', data: { product } });
 };
 
 // DELETE /api/products/:id
 const deleteProduct = async (req, res) => {
   const existing = await prisma.product.findFirst({
-    where: { id: req.params.id, userId: req.user.id }
+    where: { id: req.params.id, organizationId: req.organizationId }
   });
   if (!existing) throw new AppError('Produit non trouvé', 404);
 

@@ -5,6 +5,8 @@
     "products": "Products & Services",
     "documents": "Documents",
     "settings": "Settings",
+    "organization": "Organization",
+    "plans": "Plans & Pricing",
     "logout": "Logout"
   },
   "auth": {
