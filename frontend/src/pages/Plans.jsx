@@ -58,8 +58,8 @@ const PAYMENT_METHODS = [
   },
   {
     id: 'free_money',
-    label: 'Mixx by Joni Joni',
-    sublabel: 'Free Senegal',
+    label: 'Mixx by Yas',
+    sublabel: 'Yas Senegal',
     bg: 'bg-[#003087]',
     textColor: 'text-white',
     logo: (
