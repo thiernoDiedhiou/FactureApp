@@ -230,7 +230,7 @@ export default function Login() {
               Nos clients reçoivent leurs PDF directement par email — c'est un gain de temps énorme."
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">IS</div>
+              <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">NS</div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">Ngagne SARR</p>
                 <p className="text-xs text-gray-500">Directeur — Touba Bélél Multimedia, Thiès</p>
