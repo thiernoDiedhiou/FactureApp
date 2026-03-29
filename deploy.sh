@@ -3,91 +3,71 @@ set -e
 
 DOMAIN="facture.innosft.com"
 EMAIL="innosoftcreation@gmail.com"
-SERVER_USER="tfksservice"
-SERVER_IP="72.62.23.55"
-REMOTE_DIR="/home/tfksservice/factureapp"
 
-# ─────────────────────────────────────────────
-# MODE : local  → transfère les fichiers et lance le déploiement
-#        remote → s'exécute directement sur le serveur
-# ─────────────────────────────────────────────
-
-if [ "$1" == "push" ]; then
-  echo "=== Transfert du projet vers $SERVER_USER@$SERVER_IP:$REMOTE_DIR ==="
-
-  ssh "$SERVER_USER@$SERVER_IP" "mkdir -p $REMOTE_DIR"
-
-  rsync -avz --exclude='node_modules' \
-             --exclude='.git' \
-             --exclude='frontend/node_modules' \
-             --exclude='backend/node_modules' \
-             --exclude='certbot' \
-             --exclude='backend/prisma/data' \
-             --exclude='backend/uploads' \
-             . "$SERVER_USER@$SERVER_IP:$REMOTE_DIR"
-
-  echo "--- Copie du .env ---"
-  scp .env "$SERVER_USER@$SERVER_IP:$REMOTE_DIR/.env"
-
-  echo "--- Lancement du déploiement sur le serveur ---"
-  ssh "$SERVER_USER@$SERVER_IP" "cd $REMOTE_DIR && chmod +x deploy.sh && ./deploy.sh"
-
-  exit 0
-fi
-
-# ─────────────────────────────────────────────
-# Déploiement sur le serveur
-# ─────────────────────────────────────────────
 echo "=== Déploiement FactureApp sur $DOMAIN ==="
 
 # 1. Créer les dossiers nécessaires
-mkdir -p certbot/www certbot/conf backend/uploads backend/prisma/data
+mkdir -p backend/uploads backend/prisma/data
 
 # 2. Vérifier que le .env existe
 if [ ! -f .env ]; then
-  echo "ERREUR: fichier .env manquant. Copiez .env.example et configurez-le."
+  echo "ERREUR: fichier .env manquant."
   exit 1
 fi
 
-# 3. Première étape: démarrer avec la config HTTP uniquement (pour certbot)
-echo "--- Étape 1: Démarrage HTTP pour validation Let's Encrypt ---"
-cp nginx/conf.d/app-init.conf nginx/conf.d/default.conf
-cp nginx/conf.d/app.conf nginx/conf.d/app.conf.bak 2>/dev/null || true
+# 3. Démarrer les containers
+echo "--- Démarrage des containers ---"
+docker compose up -d --build
 
-docker compose up -d --build frontend backend nginx
+# 4. Configurer le vhost Nginx système
+echo "--- Configuration Nginx ---"
+sudo tee /etc/nginx/sites-available/facture.innosft.com > /dev/null << 'NGINXCONF'
+server {
+    listen 80;
+    server_name facture.innosft.com;
 
-echo "--- Attente que Nginx soit prêt ---"
-sleep 5
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
 
-# 4. Obtenir le certificat SSL
-echo "--- Étape 2: Obtention du certificat SSL ---"
-docker compose run --rm certbot certonly \
-  --webroot \
-  --webroot-path=/var/www/certbot \
-  --email "$EMAIL" \
-  --agree-tos \
-  --no-eff-email \
-  -d "$DOMAIN"
+    location /api/ {
+        proxy_pass         http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
 
-# Télécharger les paramètres recommandés Let's Encrypt
-if [ ! -f certbot/conf/options-ssl-nginx.conf ]; then
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf \
-    -o certbot/conf/options-ssl-nginx.conf
-fi
-if [ ! -f certbot/conf/ssl-dhparams.pem ]; then
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem \
-    -o certbot/conf/ssl-dhparams.pem
-fi
+    location /uploads/ {
+        proxy_pass         http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
 
-# 5. Basculer sur la config HTTPS complète
-echo "--- Étape 3: Activation HTTPS ---"
-cp nginx/conf.d/app.conf.bak nginx/conf.d/default.conf 2>/dev/null || \
-  cp nginx/conf.d/app.conf nginx/conf.d/default.conf
+    location / {
+        proxy_pass         http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+NGINXCONF
 
-docker compose restart nginx
+sudo ln -sf /etc/nginx/sites-available/facture.innosft.com /etc/nginx/sites-enabled/facture.innosft.com
+sudo nginx -t && sudo systemctl reload nginx
+
+# 5. Obtenir le certificat SSL
+echo "--- Obtention du certificat SSL ---"
+sudo certbot --nginx -d "$DOMAIN" --email "$EMAIL" --agree-tos --non-interactive --redirect
 
 # 6. Créer le Super Admin
-echo "--- Étape 4: Création du Super Admin ---"
+echo "--- Création du Super Admin ---"
 docker compose exec backend node scripts/seed-superadmin.js
 
 echo ""

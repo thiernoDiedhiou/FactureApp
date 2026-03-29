@@ -1,13 +1,11 @@
-version: '3.9'
-
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: factureapp-backend
-    expose:
-      - "5000"
+    ports:
+      - "5000:5000"
     env_file:
       - .env
     volumes:
@@ -20,35 +18,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: factureapp-frontend
-    expose:
-      - "80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    container_name: factureapp-nginx
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certbot/www:/var/www/certbot:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
+      - "3001:80"
     depends_on:
-      - frontend
       - backend
     restart: unless-stopped
-
-  certbot:
-    image: certbot/certbot
-    container_name: factureapp-certbot
-    volumes:
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-
-volumes:
-  uploads:
-  db_data:
