@@ -21,8 +21,8 @@ async function main() {
   const config = await prisma.platformConfig.create({
     data: {
       paymentPhone: '+221 77 328 73 76',
-      paymentName:  'CFActure',
-      supportEmail: 'contact@cfacture.sn'
+      paymentName:  'Innosoft Creation',
+      supportEmail: 'innosoftcreation@gmail.com'
     }
   });
 
