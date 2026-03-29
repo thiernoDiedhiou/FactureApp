@@ -32,8 +32,7 @@ import AdminUpgrades from './pages/admin/AdminUpgrades';
 import AdminSettings from './pages/admin/AdminSettings';
 
 const IndexRoute = () => {
-  const { user } = useAuth();
-  return user?.isSuperAdmin ? <Navigate to="/admin" replace /> : <Dashboard />;
+  return <Dashboard />;
 };
 
 const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
@@ -52,7 +51,6 @@ const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
 
   if (!user) return <Navigate to="/login" replace />;
   if (needSuperAdmin && !user.isSuperAdmin) return <Navigate to="/" replace />;
-  if (!needSuperAdmin && user.isSuperAdmin) return <Navigate to="/admin" replace />;
   return children;
 };
 
