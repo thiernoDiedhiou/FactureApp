@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { authenticate } = require('../middlewares/auth');
+const { authenticate, requireOrganization } = require('../middlewares/auth');
 const { pdfLimiter } = require('../middlewares/rateLimiter');
 const {
   getDocuments, getDocument, createDocument, updateDocument,
@@ -46,6 +46,7 @@ router.get('/view/:token', pdfLimiter, async (req, res) => {
 });
 
 router.use(authenticate);
+router.use(requireOrganization);
 
 router.get('/', getDocuments);
 router.get('/:id', getDocument);

@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middlewares/auth');
+const { authenticate, requireOrganization } = require('../middlewares/auth');
 const {
   getProducts, getProduct, getCategories, createProduct, updateProduct, deleteProduct
 } = require('../controllers/productController');
 
 router.use(authenticate);
+router.use(requireOrganization);
 
 router.get('/', getProducts);
 router.get('/categories', getCategories);

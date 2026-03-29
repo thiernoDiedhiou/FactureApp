@@ -120,4 +120,20 @@ const requireSuperAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin, requireOwner, requireSuperAdmin };
+/**
+ * Vérifie que la requête porte un organizationId valide.
+ * À utiliser sur toutes les routes tenant (clients, documents, produits, dashboard…).
+ * Le super admin sans organisation active recevra un 400 clair au lieu d'un 500 Prisma.
+ */
+const requireOrganization = (req, res, next) => {
+  if (!req.organizationId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Aucune organisation active. Sélectionnez une organisation pour continuer.',
+      code: 'NO_ORGANIZATION'
+    });
+  }
+  next();
+};
+
+module.exports = { authenticate, requireAdmin, requireOwner, requireSuperAdmin, requireOrganization };

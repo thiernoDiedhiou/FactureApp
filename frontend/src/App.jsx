@@ -63,14 +63,14 @@ const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to="/app" replace /> : children;
+  return user ? <Navigate to={user.isSuperAdmin ? '/admin' : '/app'} replace /> : children;
 };
 
 /** Route d'accueil intelligente : landing pour les anonymes, dashboard pour les connectés */
 const HomeRoute = () => {
   const { user, loading } = useAuth();
   if (loading) return <AppLoader />;
-  if (user) return <Navigate to="/app" replace />;
+  if (user) return <Navigate to={user.isSuperAdmin ? '/admin' : '/app'} replace />;
   return <LandingPage />;
 };
 
@@ -97,57 +97,59 @@ export default function App() {
       <Route path="/reset-password/:token"     element={<ResetPassword />} />
 
       {/* ── Application protégée (/app/*) — noindex dans SEOHead ── */}
-      <Suspense fallback={<AppLoader />}>
-        <Route
-          path="/app"
-          element={
-            <PrivateRoute>
+      <Route
+        path="/app"
+        element={
+          <PrivateRoute>
+            <Suspense fallback={<AppLoader />}>
               <Layout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
+            </Suspense>
+          </PrivateRoute>
+        }
+      >
+        <Route index element={<Suspense fallback={<AppLoader />}><Dashboard /></Suspense>} />
 
-          {/* Clients */}
-          <Route path="clients"           element={<ClientList />} />
-          <Route path="clients/new"       element={<ClientForm />} />
-          <Route path="clients/:id"       element={<ClientDetail />} />
-          <Route path="clients/:id/edit"  element={<ClientForm />} />
+        {/* Clients */}
+        <Route path="clients"           element={<Suspense fallback={<AppLoader />}><ClientList /></Suspense>} />
+        <Route path="clients/new"       element={<Suspense fallback={<AppLoader />}><ClientForm /></Suspense>} />
+        <Route path="clients/:id"       element={<Suspense fallback={<AppLoader />}><ClientDetail /></Suspense>} />
+        <Route path="clients/:id/edit"  element={<Suspense fallback={<AppLoader />}><ClientForm /></Suspense>} />
 
-          {/* Produits */}
-          <Route path="products"          element={<ProductList />} />
-          <Route path="products/new"      element={<ProductForm />} />
-          <Route path="products/:id/edit" element={<ProductForm />} />
+        {/* Produits */}
+        <Route path="products"          element={<Suspense fallback={<AppLoader />}><ProductList /></Suspense>} />
+        <Route path="products/new"      element={<Suspense fallback={<AppLoader />}><ProductForm /></Suspense>} />
+        <Route path="products/:id/edit" element={<Suspense fallback={<AppLoader />}><ProductForm /></Suspense>} />
 
-          {/* Documents */}
-          <Route path="documents"           element={<DocumentList />} />
-          <Route path="documents/new"       element={<DocumentForm />} />
-          <Route path="documents/:id"       element={<DocumentDetail />} />
-          <Route path="documents/:id/edit"  element={<DocumentForm />} />
+        {/* Documents */}
+        <Route path="documents"           element={<Suspense fallback={<AppLoader />}><DocumentList /></Suspense>} />
+        <Route path="documents/new"       element={<Suspense fallback={<AppLoader />}><DocumentForm /></Suspense>} />
+        <Route path="documents/:id"       element={<Suspense fallback={<AppLoader />}><DocumentDetail /></Suspense>} />
+        <Route path="documents/:id/edit"  element={<Suspense fallback={<AppLoader />}><DocumentForm /></Suspense>} />
 
-          {/* Paramètres & Organisation */}
-          <Route path="settings"     element={<Settings />} />
-          <Route path="organization" element={<Organization />} />
-          <Route path="plans"        element={<Plans />} />
-        </Route>
+        {/* Paramètres & Organisation */}
+        <Route path="settings"     element={<Suspense fallback={<AppLoader />}><Settings /></Suspense>} />
+        <Route path="organization" element={<Suspense fallback={<AppLoader />}><Organization /></Suspense>} />
+        <Route path="plans"        element={<Suspense fallback={<AppLoader />}><Plans /></Suspense>} />
+      </Route>
 
-        {/* ── Administration (/admin/*) — noindex ──────────────── */}
-        <Route
-          path="/admin"
-          element={
-            <PrivateRoute requireSuperAdmin>
+      {/* ── Administration (/admin/*) — noindex ──────────────────── */}
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute requireSuperAdmin>
+            <Suspense fallback={<AppLoader />}>
               <AdminLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route index                element={<AdminDashboard />} />
-          <Route path="organizations" element={<AdminOrganizations />} />
-          <Route path="users"         element={<AdminUsers />} />
-          <Route path="plans"         element={<AdminPlans />} />
-          <Route path="upgrades"      element={<AdminUpgrades />} />
-          <Route path="settings"      element={<AdminSettings />} />
-        </Route>
-      </Suspense>
+            </Suspense>
+          </PrivateRoute>
+        }
+      >
+        <Route index                element={<Suspense fallback={<AppLoader />}><AdminDashboard /></Suspense>} />
+        <Route path="organizations" element={<Suspense fallback={<AppLoader />}><AdminOrganizations /></Suspense>} />
+        <Route path="users"         element={<Suspense fallback={<AppLoader />}><AdminUsers /></Suspense>} />
+        <Route path="plans"         element={<Suspense fallback={<AppLoader />}><AdminPlans /></Suspense>} />
+        <Route path="upgrades"      element={<Suspense fallback={<AppLoader />}><AdminUpgrades /></Suspense>} />
+        <Route path="settings"      element={<Suspense fallback={<AppLoader />}><AdminSettings /></Suspense>} />
+      </Route>
 
       {/* ── Catch-all ───────────────────────────────────────────── */}
       <Route path="*" element={<Navigate to="/" replace />} />

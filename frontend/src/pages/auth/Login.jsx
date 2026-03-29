@@ -59,9 +59,9 @@ export default function Login() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
     try {
-      await login(form.email, form.password);
+      const loggedUser = await login(form.email, form.password);
       toast.success('Connexion réussie !');
-      navigate('/app');
+      navigate(loggedUser.isSuperAdmin ? '/admin' : '/app');
     } catch (err) {
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         navigate(`/verify-email?email=${encodeURIComponent(err.response.data.data?.email || form.email)}`);
