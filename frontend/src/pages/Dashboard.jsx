@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import {
   TrendingUp, CheckCircle, Clock, XCircle, AlertTriangle,
   Users, Plus, ArrowRight, FileText
@@ -58,6 +59,8 @@ const CustomTooltip = ({ active, payload, label, formatter }) => {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const { organization } = useAuth();
+  const navigate = useNavigate();
   const { settings } = useSettings();
   const formatAmount = useFormatCurrency();
   const [stats, setStats] = useState(null);
@@ -65,6 +68,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!organization) {
+      navigate('/app/organization');
+      return;
+    }
     const load = async () => {
       try {
         const [statsRes, chartRes] = await Promise.all([
@@ -80,7 +87,7 @@ export default function Dashboard() {
       }
     };
     load();
-  }, []);
+  }, [organization]);
 
   if (loading) {
     return (
