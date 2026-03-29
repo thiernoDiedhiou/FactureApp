@@ -9,11 +9,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, key: 'dashboard', exact: true },
-  { to: '/clients', icon: Users, key: 'clients' },
-  { to: '/products', icon: Package, key: 'products' },
-  { to: '/documents', icon: FileText, key: 'documents' },
-  { to: '/organization', icon: Building2, key: 'organization' },
+  { to: '/app', icon: LayoutDashboard, key: 'dashboard', exact: true },
+  { to: '/app/clients', icon: Users, key: 'clients' },
+  { to: '/app/products', icon: Package, key: 'products' },
+  { to: '/app/documents', icon: FileText, key: 'documents' },
+  { to: '/app/organization', icon: Building2, key: 'organization' },
 ];
 
 export default function Sidebar({ onClose }) {
@@ -33,7 +33,7 @@ export default function Sidebar({ onClose }) {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-700">
         <NavLink
-          to="/"
+          to="/app"
           end
           onClick={onClose}
           className="flex items-center gap-3 rounded-lg hover:opacity-80 transition-opacity"
@@ -94,7 +94,7 @@ export default function Sidebar({ onClose }) {
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-gray-700 space-y-1">
         <NavLink
-          to="/plans"
+          to="/app/plans"
           onClick={onClose}
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
@@ -109,7 +109,7 @@ export default function Sidebar({ onClose }) {
         </NavLink>
 
         <NavLink
-          to="/settings"
+          to="/app/settings"
           onClick={onClose}
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${

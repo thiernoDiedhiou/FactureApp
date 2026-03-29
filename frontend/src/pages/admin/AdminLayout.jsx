@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
-  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings
+  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2
 } from 'lucide-react';
 
 const navItems = [
@@ -25,12 +26,37 @@ const PAGE_TITLES = {
 };
 
 function Sidebar({ onClose }) {
-  const { user, logout } = useAuth();
+  const { user, organizations, organization, switchOrganization, logout } = useAuth();
   const navigate = useNavigate();
+  const [switching, setSwitching] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  // Bascule vers la première org disponible (ou org déjà active) puis va sur /app
+  const handleBackToApp = async () => {
+    onClose();
+    // Si une org est déjà active dans le token, aller directement sur /app
+    if (organization) {
+      navigate('/app');
+      return;
+    }
+    // Sinon, switcher vers la première org disponible
+    if (organizations?.length > 0) {
+      setSwitching(true);
+      try {
+        await switchOrganization(organizations[0].id);
+        navigate('/app');
+      } catch {
+        toast.error('Impossible de basculer vers l\'application');
+      } finally {
+        setSwitching(false);
+      }
+    } else {
+      toast.error('Aucune organisation disponible. Créez d\'abord une organisation.');
+    }
   };
 
   return (
@@ -81,14 +107,17 @@ function Sidebar({ onClose }) {
 
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-gray-800 space-y-1">
-        <NavLink
-          to="/"
-          onClick={onClose}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+        <button
+          onClick={handleBackToApp}
+          disabled={switching}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors disabled:opacity-50"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Retour à l'app
-        </NavLink>
+          {switching
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <ArrowLeft className="w-4 h-4" />
+          }
+          {switching ? 'Chargement…' : 'Retour à l\'app'}
+        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 transition-colors"

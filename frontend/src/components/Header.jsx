@@ -5,19 +5,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
 const breadcrumbMap = {
-  '/': 'dashboard',
-  '/clients': 'clients',
-  '/products': 'products',
-  '/documents': 'documents',
-  '/settings': 'settings',
-  '/organization': 'organization',
-  '/plans': 'plans'
+  '/app':              'dashboard',
+  '/app/clients':      'clients',
+  '/app/products':     'products',
+  '/app/documents':    'documents',
+  '/app/settings':     'settings',
+  '/app/organization': 'organization',
+  '/app/plans':        'plans',
 };
 
 const quickActions = {
-  '/clients': { to: '/clients/new', label: 'Nouveau client' },
-  '/products': { to: '/products/new', label: 'Nouveau produit' },
-  '/documents': { to: '/documents/new', label: 'Nouveau document' }
+  '/app/clients':   { to: '/app/clients/new',   label: 'Nouveau client' },
+  '/app/products':  { to: '/app/products/new',  label: 'Nouveau produit' },
+  '/app/documents': { to: '/app/documents/new', label: 'Nouveau document' },
 };
 
 export default function Header({ onMenuClick }) {
@@ -29,7 +29,9 @@ export default function Header({ onMenuClick }) {
   const [switching, setSwitching] = useState(null);
   const dropdownRef = useRef(null);
 
-  const path = '/' + location.pathname.split('/')[1];
+  // Normalise le pathname pour matcher la map (/app, /app/clients, /app/clients/123 → /app/clients)
+  const segments = location.pathname.split('/').filter(Boolean); // ['app', 'clients', '123']
+  const path = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : `/${segments[0] || 'app'}`;
   const titleKey = breadcrumbMap[path] || 'dashboard';
   const quickAction = quickActions[path];
 
@@ -56,7 +58,7 @@ export default function Header({ onMenuClick }) {
     try {
       await switchOrganization(orgId);
       setDropdownOpen(false);
-      navigate('/');
+      navigate('/app');
     } catch {
       // error already handled in switchOrganization
     } finally {
@@ -164,7 +166,7 @@ export default function Header({ onMenuClick }) {
                   </Link>
                 )}
                 <Link
-                  to="/organization"
+                  to="/app/organization"
                   onClick={() => setDropdownOpen(false)}
                   className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -172,7 +174,7 @@ export default function Header({ onMenuClick }) {
                   Organisation
                 </Link>
                 <Link
-                  to="/settings"
+                  to="/app/settings"
                   onClick={() => setDropdownOpen(false)}
                   className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >

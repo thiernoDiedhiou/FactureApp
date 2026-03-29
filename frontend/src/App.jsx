@@ -61,16 +61,23 @@ const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
 
 /** Redirige les utilisateurs connectés vers /app (évite d'afficher login/register) */
 const PublicRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, organization, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to={user.isSuperAdmin ? '/admin' : '/app'} replace /> : children;
+  if (!user) return children;
+  if (user.isSuperAdmin && !organization) return <Navigate to="/admin" replace />;
+  return <Navigate to="/app" replace />;
 };
 
 /** Route d'accueil intelligente : landing pour les anonymes, dashboard pour les connectés */
 const HomeRoute = () => {
-  const { user, loading } = useAuth();
+  const { user, organization, loading } = useAuth();
   if (loading) return <AppLoader />;
-  if (user) return <Navigate to={user.isSuperAdmin ? '/admin' : '/app'} replace />;
+  if (user) {
+    // Super admin sans org active → admin panel
+    // Super admin avec org active (après switchOrganization) → app
+    if (user.isSuperAdmin && !organization) return <Navigate to="/admin" replace />;
+    return <Navigate to="/app" replace />;
+  }
   return <LandingPage />;
 };
 
