@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 const SUPERADMIN = {
   name: 'Super Admin',
-  email: 'admin@cfacture.sn',
+  email: 'innosoftcreation@gmail.com',
   password: 'Admin@1234',
 };
 

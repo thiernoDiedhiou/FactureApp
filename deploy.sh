@@ -2,7 +2,7 @@
 set -e
 
 DOMAIN="facture.innosft.com"
-EMAIL="admin@innosft.com"   # <-- Mettez votre email ici
+EMAIL="innosoftcreation@gmail.com"
 
 echo "=== Déploiement FactureApp sur $DOMAIN ==="
 
