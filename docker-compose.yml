@@ -8,17 +8,8 @@ services:
     container_name: factureapp-backend
     expose:
       - "5000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=file:./data/prod.db
-      - JWT_SECRET=${JWT_SECRET}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
-      - FRONTEND_URL=https://facture.innosft.com
-      - API_BASE_URL=https://facture.innosft.com
+    env_file:
+      - .env
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/prisma/data:/app/prisma/data
