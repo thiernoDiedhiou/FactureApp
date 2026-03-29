@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { User, Mail, Lock, Loader2, Building2, ShieldCheck, Zap, Globe } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import SEOHead from '../../components/SEOHead';
 
 const FEATURES = [
   { icon: Zap,         text: 'Opérationnel en moins de 2 minutes' },
@@ -87,6 +88,12 @@ export default function Register() {
   };
 
   return (
+    <>
+    <SEOHead
+      title="Créer un compte"
+      description="Inscrivez-vous gratuitement et commencez à facturer en quelques minutes. Logiciel de facturation en ligne pour PME et freelances de la zone UEMOA."
+      canonical="/register"
+    />
     <div className="min-h-screen flex">
 
       {/* ── Panneau gauche — Branding ── */}
@@ -322,5 +329,6 @@ export default function Register() {
       </div>
 
     </div>
+    </>
   );
 }

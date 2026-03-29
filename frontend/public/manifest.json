@@ -1,7 +1,7 @@
 {
-  "name": "CFActure",
-  "short_name": "CFActure",
-  "description": "Application de facturation en Franc CFA pour la zone UEMOA",
+  "name": "FactureApp",
+  "short_name": "FactureApp",
+  "description": "Logiciel de facturation en ligne pour PME et freelances de la zone UEMOA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

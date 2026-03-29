@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Mail, Lock, Loader2, FileText, Send, Users, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import SEOHead from '../../components/SEOHead';
 
 const FEATURES = [
   { icon: FileText, text: 'Factures, devis et proformas en quelques clics' },
@@ -60,7 +61,7 @@ export default function Login() {
     try {
       await login(form.email, form.password);
       toast.success('Connexion réussie !');
-      navigate('/');
+      navigate('/app');
     } catch (err) {
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         navigate(`/verify-email?email=${encodeURIComponent(err.response.data.data?.email || form.email)}`);
@@ -73,6 +74,11 @@ export default function Login() {
   };
 
   return (
+    <>
+    <SEOHead
+      title="Connexion"
+      noindex={true}
+    />
     <div className="min-h-screen flex">
 
       {/* ── Panneau gauche — Branding ── */}
@@ -247,5 +253,6 @@ export default function Login() {
       </div>
 
     </div>
+    </>
   );
 }

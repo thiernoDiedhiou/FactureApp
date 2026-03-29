@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Allow: /fonctionnalites
+Allow: /tarifs
+Allow: /register
+Allow: /contact
+Allow: /legal/
+
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /settings/
+Disallow: /*.json$
+
+Sitemap: https://facture.innosft.com/sitemap.xml
