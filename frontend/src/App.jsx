@@ -31,6 +31,11 @@ import AdminPlans from './pages/admin/AdminPlans';
 import AdminUpgrades from './pages/admin/AdminUpgrades';
 import AdminSettings from './pages/admin/AdminSettings';
 
+const IndexRoute = () => {
+  const { user } = useAuth();
+  return user?.isSuperAdmin ? <Navigate to="/admin" replace /> : <Dashboard />;
+};
+
 const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
   const { user, loading } = useAuth();
 
@@ -47,6 +52,7 @@ const PrivateRoute = ({ children, requireSuperAdmin: needSuperAdmin }) => {
 
   if (!user) return <Navigate to="/login" replace />;
   if (needSuperAdmin && !user.isSuperAdmin) return <Navigate to="/" replace />;
+  if (!needSuperAdmin && user.isSuperAdmin) return <Navigate to="/admin" replace />;
   return children;
 };
 
@@ -70,7 +76,7 @@ export default function App() {
 
       {/* Protected routes */}
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<IndexRoute />} />
 
         {/* Clients */}
         <Route path="clients" element={<ClientList />} />

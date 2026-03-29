@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "make-superadmin": "node scripts/make-superadmin.js",
-    "seed:plans": "node scripts/seed-plans.js"
+    "seed:plans": "node scripts/seed-plans.js",
+    "seed:superadmin": "node scripts/seed-superadmin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",

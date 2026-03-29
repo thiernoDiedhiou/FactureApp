@@ -1,0 +1,6 @@
+.env
+certbot/
+backend/uploads/
+backend/prisma/data/
+frontend/node_modules/
+backend/node_modules/

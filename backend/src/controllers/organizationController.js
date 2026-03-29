@@ -8,6 +8,9 @@ const prisma = new PrismaClient();
 
 // GET /api/organizations/me — Infos de l'org courante
 const getMyOrganization = async (req, res) => {
+  if (!req.organizationId) {
+    throw new AppError('Aucune organisation associée à ce compte', 400);
+  }
   const org = await prisma.organization.findUnique({
     where: { id: req.organizationId },
     include: {

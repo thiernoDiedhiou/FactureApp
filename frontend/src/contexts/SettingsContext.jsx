@@ -29,7 +29,7 @@ export const SettingsProvider = ({ children }) => {
   const { i18n } = useTranslation();
 
   const loadSettings = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.isSuperAdmin) return;
     setLoading(true);
     try {
       const { data } = await api.get('/settings');

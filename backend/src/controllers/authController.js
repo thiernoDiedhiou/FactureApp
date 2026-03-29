@@ -144,13 +144,30 @@ const login = async (req, res) => {
     return res.status(401).json({ success: false, message: 'Email ou mot de passe incorrect' });
   }
 
-  // Bloquer si email non vérifié
-  if (!user.isEmailVerified) {
+  // Bloquer si email non vérifié (sauf super admin)
+  if (!user.isEmailVerified && !user.isSuperAdmin) {
     return res.status(403).json({
       success: false,
       message: 'Veuillez vérifier votre adresse email avant de vous connecter.',
       code: 'EMAIL_NOT_VERIFIED',
       data: { email: user.email }
+    });
+  }
+
+  // Connexion super admin (sans organisation)
+  if (user.isSuperAdmin) {
+    const { accessToken, refreshToken } = await generateTokens(user.id, null, 'SUPERADMIN');
+    const { password: _, memberships, ...userPublic } = user;
+    return res.json({
+      success: true,
+      message: 'Connexion réussie',
+      data: {
+        user: { ...userPublic, organizationId: null, orgRole: 'SUPERADMIN' },
+        organization: null,
+        organizations: [],
+        accessToken,
+        refreshToken
+      }
     });
   }
 
