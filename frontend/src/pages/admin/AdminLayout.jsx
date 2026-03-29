@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
-  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2
+  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2, Search
 } from 'lucide-react';
 
 const navItems = [
@@ -25,41 +26,135 @@ const PAGE_TITLES = {
   '/admin/settings':      'Paramètres',
 };
 
+// Modal de sélection d'organisation pour le super admin
+function OrgPickerModal({ onClose, onSelect }) {
+  const [orgs, setOrgs] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    api.get('/admin/organizations?limit=100')
+      .then(({ data }) => setOrgs(data.data.organizations || []))
+      .catch(() => toast.error('Erreur chargement organisations'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = orgs.filter(o =>
+    o.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-900">Choisir une organisation</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Vous accéderez à l'app en tant qu'OWNER</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-gray-100">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Rechercher une organisation…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-sm text-gray-500 py-8">Aucune organisation trouvée</p>
+          ) : (
+            filtered.map(org => (
+              <button
+                key={org.id}
+                onClick={() => onSelect(org)}
+                className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors text-left"
+              >
+                <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-4 h-4 text-primary-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{org.name}</p>
+                  <p className="text-xs text-gray-500">{org.plan} · {org._count?.members ?? ''} membres</p>
+                </div>
+                {org.suspended && (
+                  <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex-shrink-0">Suspendu</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Sidebar({ onClose }) {
-  const { user, organizations, organization, switchOrganization, logout } = useAuth();
+  const { user, organization, loadUser, logout } = useAuth();
   const navigate = useNavigate();
   const [switching, setSwitching] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  // Bascule vers la première org disponible (ou org déjà active) puis va sur /app
-  const handleBackToApp = async () => {
-    onClose();
-    // Si une org est déjà active dans le token, aller directement sur /app
-    if (organization) {
+  const handleSelectOrg = async (org) => {
+    setShowPicker(false);
+    setSwitching(true);
+    try {
+      const { data } = await api.post('/admin/impersonate-org', { organizationId: org.id });
+      localStorage.setItem('accessToken', data.data.accessToken);
+      localStorage.setItem('refreshToken', data.data.refreshToken);
+      await loadUser(); // recharge user + organization dans le contexte
+      onClose();
       navigate('/app');
-      return;
-    }
-    // Sinon, switcher vers la première org disponible
-    if (organizations?.length > 0) {
-      setSwitching(true);
-      try {
-        await switchOrganization(organizations[0].id);
-        navigate('/app');
-      } catch {
-        toast.error('Impossible de basculer vers l\'application');
-      } finally {
-        setSwitching(false);
-      }
-    } else {
-      toast.error('Aucune organisation disponible. Créez d\'abord une organisation.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Erreur de basculement');
+    } finally {
+      setSwitching(false);
     }
   };
 
+  const handleBackToApp = () => {
+    // Si une org est déjà active dans le token, aller directement
+    if (organization) {
+      onClose();
+      navigate('/app');
+      return;
+    }
+    // Sinon ouvrir le picker
+    setShowPicker(true);
+  };
+
   return (
+    <>
+    {showPicker && (
+      <OrgPickerModal
+        onClose={() => setShowPicker(false)}
+        onSelect={handleSelectOrg}
+      />
+    )}
     <div className="h-full flex flex-col bg-gray-900 border-r border-gray-800">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-5 border-b border-gray-800">
@@ -127,6 +222,7 @@ function Sidebar({ onClose }) {
         </button>
       </div>
     </div>
+    </>
   );
 }
 

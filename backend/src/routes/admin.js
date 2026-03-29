@@ -6,7 +6,8 @@ const {
   deleteOrganization, getUsers, toggleSuperAdmin,
   getAdminPlans, updatePlanConfig,
   getUpgradeRequests, processUpgradeRequest,
-  getPlatformConfig, updatePlatformConfig
+  getPlatformConfig, updatePlatformConfig,
+  impersonateOrg
 } = require('../controllers/adminController');
 
 // Toutes les routes admin nécessitent d'être authentifié ET super admin
@@ -28,5 +29,8 @@ router.patch('/upgrades/:id', processUpgradeRequest);
 
 router.get('/config', getPlatformConfig);
 router.patch('/config', updatePlatformConfig);
+
+// Super admin : entrer dans une organisation sans en être membre
+router.post('/impersonate-org', impersonateOrg);
 
 module.exports = router;

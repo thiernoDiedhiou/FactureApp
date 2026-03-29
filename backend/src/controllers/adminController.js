@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { z } = require('zod');
 const { AppError } = require('../middlewares/errorHandler');
+const { generateTokens } = require('../utils/jwt');
 
 const prisma = new PrismaClient();
 
@@ -374,8 +375,40 @@ const updatePlatformConfig = async (req, res) => {
   res.json({ success: true, message: 'Configuration mise à jour', data: { config: updated } });
 };
 
+// POST /api/admin/impersonate-org — Super admin entre dans une org sans en être membre
+const impersonateOrg = async (req, res) => {
+  const { organizationId } = req.body;
+  if (!organizationId) throw new AppError('organizationId requis', 400);
+
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { id: true, name: true, slug: true, plan: true, suspended: true }
+  });
+  if (!org) throw new AppError('Organisation introuvable', 404);
+
+  // Génère un token avec le super admin dans cette org en tant qu'OWNER virtuel
+  const { accessToken, refreshToken } = await generateTokens(req.user.id, org.id, 'OWNER');
+
+  const { password: _, ...userPublic } = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { id: true, name: true, email: true, isSuperAdmin: true, isEmailVerified: true, createdAt: true }
+  });
+
+  res.json({
+    success: true,
+    message: `Connecté à l'organisation "${org.name}"`,
+    data: {
+      accessToken,
+      refreshToken,
+      organization: org,
+      user: { ...userPublic, organizationId: org.id, orgRole: 'OWNER' }
+    }
+  });
+};
+
 module.exports = {
   getStats, getOrganizations, updateOrgPlan, toggleSuspend, deleteOrganization,
   getUsers, toggleSuperAdmin, getAdminPlans, updatePlanConfig,
-  getUpgradeRequests, processUpgradeRequest, getPlatformConfig, updatePlatformConfig
+  getUpgradeRequests, processUpgradeRequest, getPlatformConfig, updatePlatformConfig,
+  impersonateOrg
 };
