@@ -154,27 +154,27 @@ const login = async (req, res) => {
     });
   }
 
-  // Connexion super admin (sans organisation)
-  if (user.isSuperAdmin) {
-    const { accessToken, refreshToken } = await generateTokens(user.id, null, 'SUPERADMIN');
-    const { password: _, memberships, ...userPublic } = user;
-    return res.json({
-      success: true,
-      message: 'Connexion réussie',
-      data: {
-        user: { ...userPublic, organizationId: null, orgRole: 'SUPERADMIN' },
-        organization: null,
-        organizations: [],
-        accessToken,
-        refreshToken
-      }
-    });
-  }
-
   if (user.memberships.length === 0) {
+    if (user.isSuperAdmin) {
+      // Super admin sans org : accès panel admin uniquement
+      const { accessToken, refreshToken } = await generateTokens(user.id, null, 'SUPERADMIN');
+      const { password: _, memberships, ...userPublic } = user;
+      return res.json({
+        success: true,
+        message: 'Connexion réussie',
+        data: {
+          user: { ...userPublic, organizationId: null, orgRole: 'SUPERADMIN' },
+          organization: null,
+          organizations: [],
+          accessToken,
+          refreshToken
+        }
+      });
+    }
     return res.status(403).json({ success: false, message: 'Aucune organisation associée à ce compte' });
   }
 
+  // Utilisateur normal OU super admin avec org(s) → connexion avec la première org
   const activeMembership = user.memberships[0];
   const { accessToken, refreshToken } = await generateTokens(
     user.id,
