@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: factureapp-backend
     ports:
-      - "5001:5000"
+      - "5002:5000"
     env_file:
       - .env
     volumes:
@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     container_name: factureapp-frontend
     ports:
-      - "3001:80"
+      - "3002:80"
     depends_on:
       - backend
     restart: unless-stopped
