@@ -4,6 +4,7 @@ import {
   Globe, ArrowRight, Star, ChevronRight,
 } from 'lucide-react';
 import SEOHead, { SOFTWARE_APP_SCHEMA, WEBSITE_SCHEMA } from '../../components/SEOHead';
+import PublicNav from '../../components/PublicNav';
 
 /* ── Données ─────────────────────────────────────────────── */
 const FEATURES = [
@@ -87,39 +88,7 @@ export default function LandingPage() {
       <div className="min-h-screen bg-white">
 
         {/* ── Navigation ─────────────────────────────────────────── */}
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
-          <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Navigation principale">
-            <Link to="/" className="flex items-center gap-2" aria-label="FactureApp — Accueil">
-              <BrandLogo />
-              <span className="text-xl font-bold text-gray-900">FactureApp</span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/fonctionnalites" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">
-                Fonctionnalités
-              </Link>
-              <Link to="/tarifs" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">
-                Tarifs
-              </Link>
-              <Link to="/contact" className="text-sm text-gray-600 hover:text-primary-600 transition-colors">
-                Contact
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm text-gray-600 hover:text-primary-600 font-medium transition-colors">
-                Connexion
-              </Link>
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                Essayer gratuitement
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </Link>
-            </div>
-          </nav>
-        </header>
+        <PublicNav />
 
         {/* ── Hero ────────────────────────────────────────────────── */}
         <section className="bg-gradient-to-br from-[#00C8D7] to-[#007a87] text-white py-20 lg:py-28 relative overflow-hidden">

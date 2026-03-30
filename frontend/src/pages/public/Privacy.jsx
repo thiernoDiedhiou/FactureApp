@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import PublicNav from '../../components/PublicNav';
 import SEOHead from '../../components/SEOHead';
 
 export default function Privacy() {
@@ -11,16 +12,7 @@ export default function Privacy() {
       />
 
       <div className="min-h-screen bg-white">
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
-          <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Navigation principale">
-            <Link to="/" className="text-xl font-bold text-gray-900" aria-label="FactureApp — Accueil">
-              FactureApp
-            </Link>
-            <Link to="/register" className="inline-flex items-center bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-              Essayer gratuitement
-            </Link>
-          </nav>
-        </header>
+        <PublicNav />
 
         <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Politique de Confidentialité</h1>

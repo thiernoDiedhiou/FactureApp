@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import PublicNav from '../../components/PublicNav';
 import { Mail, MapPin, Globe } from 'lucide-react';
 import SEOHead, { SOFTWARE_APP_SCHEMA } from '../../components/SEOHead';
 
@@ -14,20 +15,7 @@ export default function Contact() {
 
       <div className="min-h-screen bg-white">
 
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
-          <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between" aria-label="Navigation principale">
-            <Link to="/" className="text-xl font-bold text-gray-900" aria-label="FactureApp — Accueil">
-              FactureApp
-            </Link>
-            <div className="flex items-center gap-3">
-              <Link to="/fonctionnalites" className="text-sm text-gray-600 hover:text-primary-600">Fonctionnalités</Link>
-              <Link to="/tarifs" className="text-sm text-gray-600 hover:text-primary-600">Tarifs</Link>
-              <Link to="/register" className="inline-flex items-center bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                Essayer gratuitement
-              </Link>
-            </div>
-          </nav>
-        </header>
+        <PublicNav />
 
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
@@ -59,7 +47,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">Localisation</p>
-                  <p className="text-gray-600 text-sm">Dakar, Sénégal — Zone UEMOA</p>
+                  <p className="text-gray-600 text-sm">Thiès, Sénégal — Zone UEMOA</p>
                 </div>
               </div>
 
