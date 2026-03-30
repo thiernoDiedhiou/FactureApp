@@ -68,7 +68,7 @@ export default function ClientDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link to={`/clients/${id}/edit`} className="btn-secondary">
+          <Link to={`/app/clients/${id}/edit`} className="btn-secondary">
             <Edit className="w-4 h-4" /> Modifier
           </Link>
           {confirmDelete ? (
@@ -141,7 +141,7 @@ export default function ClientDetail() {
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 className="section-title">Historique des documents</h2>
             <Link
-              to={`/documents/new?clientId=${client.id}`}
+              to={`/app/documents/new?clientId=${client.id}`}
               className="btn-primary text-xs px-3 py-1.5"
             >
               <Plus className="w-3 h-3" /> Nouveau document
@@ -169,7 +169,7 @@ export default function ClientDetail() {
                   {client.documents.map(doc => (
                     <tr key={doc.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3">
-                        <Link to={`/documents/${doc.id}`} className="text-primary-600 text-sm font-medium hover:underline">
+                        <Link to={`/app/documents/${doc.id}`} className="text-primary-600 text-sm font-medium hover:underline">
                           {doc.number}
                         </Link>
                       </td>

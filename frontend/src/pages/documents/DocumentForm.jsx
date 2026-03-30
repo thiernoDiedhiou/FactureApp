@@ -168,11 +168,11 @@ export default function DocumentForm() {
       if (isEdit) {
         await api.put(`/documents/${id}`, payload);
         toast.success(t('documents.updated'));
-        navigate(`/documents/${id}`);
+        navigate(`/app/documents/${id}`);
       } else {
         const { data } = await api.post('/documents', payload);
         toast.success(t('documents.created'));
-        navigate(`/documents/${data.data.document.id}`);
+        navigate(`/app/documents/${data.data.document.id}`);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');

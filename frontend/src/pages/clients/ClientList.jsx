@@ -171,11 +171,11 @@ export default function ClientList() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link to={`/clients/${client.id}`}
+                          <Link to={`/app/clients/${client.id}`}
                             className="p-1.5 rounded hover:bg-blue-50 hover:text-blue-600 text-gray-400 transition-colors" title="Voir">
                             <Eye className="w-4 h-4" />
                           </Link>
-                          <Link to={`/clients/${client.id}/edit`}
+                          <Link to={`/app/clients/${client.id}/edit`}
                             className="p-1.5 rounded hover:bg-primary-50 hover:text-primary-600 text-gray-400 transition-colors" title="Modifier">
                             <Edit className="w-4 h-4" />
                           </Link>

@@ -157,7 +157,7 @@ export default function DocumentList() {
                     return (
                       <tr key={doc.id} className={`hover:bg-gray-50 transition-colors group ${overdue ? 'bg-red-50/30' : ''}`}>
                         <td className="px-4 py-3">
-                          <Link to={`/documents/${doc.id}`} className="font-medium text-primary-600 text-sm hover:underline">
+                          <Link to={`/app/documents/${doc.id}`} className="font-medium text-primary-600 text-sm hover:underline">
                             {doc.number}
                           </Link>
                           {overdue && (
@@ -186,11 +186,11 @@ export default function DocumentList() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Link to={`/documents/${doc.id}`}
+                            <Link to={`/app/documents/${doc.id}`}
                               className="p-1.5 rounded hover:bg-blue-50 hover:text-blue-600 text-gray-400" title="Voir">
                               <Eye className="w-4 h-4" />
                             </Link>
-                            <Link to={`/documents/${doc.id}/edit`}
+                            <Link to={`/app/documents/${doc.id}/edit`}
                               className="p-1.5 rounded hover:bg-primary-50 hover:text-primary-600 text-gray-400" title="Modifier">
                               <Edit className="w-4 h-4" />
                             </Link>

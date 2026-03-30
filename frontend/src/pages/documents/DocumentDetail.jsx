@@ -145,7 +145,7 @@ export default function DocumentDetail() {
     try {
       const { data } = await api.post(`/documents/${id}/convert`, { type: convertType });
       toast.success(`Converti en ${convertType}`);
-      navigate(`/documents/${data.data.document.id}`);
+      navigate(`/app/documents/${data.data.document.id}`);
     } catch (err) {
       toast.error('Erreur conversion');
     }
@@ -155,7 +155,7 @@ export default function DocumentDetail() {
     try {
       const { data } = await api.post(`/documents/${id}/duplicate`);
       toast.success(t('documents.duplicated'));
-      navigate(`/documents/${data.data.document.id}`);
+      navigate(`/app/documents/${data.data.document.id}`);
     } catch {
       toast.error('Erreur duplication');
     }
@@ -207,7 +207,7 @@ export default function DocumentDetail() {
           <button onClick={handleDuplicate} className="btn-secondary">
             <Copy className="w-4 h-4" /> Dupliquer
           </button>
-          <Link to={`/documents/${id}/edit`} className="btn-secondary">
+          <Link to={`/app/documents/${id}/edit`} className="btn-secondary">
             <Edit className="w-4 h-4" /> Modifier
           </Link>
         </div>
