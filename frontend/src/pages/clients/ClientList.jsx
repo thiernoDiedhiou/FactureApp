@@ -81,7 +81,7 @@ export default function ClientList() {
             <span className="hidden sm:inline">{t('clients.importCSV')}</span>
             <input type="file" accept=".csv" className="hidden" onChange={handleImport} disabled={importing} />
           </label>
-          <Link to="/clients/new" className="btn-primary">
+          <Link to="/app/clients/new" className="btn-primary">
             <Plus className="w-4 h-4" />
             {t('clients.new')}
           </Link>
@@ -110,7 +110,7 @@ export default function ClientList() {
           <div className="text-center py-16">
             <Users className="w-16 h-16 mx-auto text-gray-200 mb-4" />
             <p className="text-gray-500 font-medium">{t('clients.noClients')}</p>
-            <Link to="/clients/new" className="btn-primary mt-4 inline-flex">
+            <Link to="/app/clients/new" className="btn-primary mt-4 inline-flex">
               <Plus className="w-4 h-4" /> {t('clients.new')}
             </Link>
           </div>

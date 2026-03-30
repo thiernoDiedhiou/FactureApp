@@ -76,7 +76,7 @@ export default function ProductForm() {
         await api.post('/products', payload);
         toast.success(t('products.created'));
       }
-      navigate('/products');
+      navigate('/app/products');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
     } finally {
@@ -96,7 +96,7 @@ export default function ProductForm() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Link to="/products" className="btn-secondary px-3 py-2">
+        <Link to="/app/products" className="btn-secondary px-3 py-2">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <h1 className="page-title">
@@ -189,7 +189,7 @@ export default function ProductForm() {
         )}
 
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
-          <Link to="/products" className="btn-secondary">{t('common.cancel')}</Link>
+          <Link to="/app/products" className="btn-secondary">{t('common.cancel')}</Link>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {t('common.save')}

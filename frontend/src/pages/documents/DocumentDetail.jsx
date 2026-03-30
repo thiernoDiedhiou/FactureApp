@@ -41,7 +41,7 @@ export default function DocumentDetail() {
       }));
     } catch {
       toast.error('Document non trouvé');
-      navigate('/documents');
+      navigate('/app/documents');
     } finally {
       setLoading(false);
     }
@@ -172,7 +172,7 @@ export default function DocumentDetail() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link to="/documents" className="btn-secondary px-3 py-2">
+          <Link to="/app/documents" className="btn-secondary px-3 py-2">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>

@@ -110,7 +110,7 @@ export default function Dashboard() {
               {s.overdueCount} facture(s) en retard de paiement
             </p>
           </div>
-          <Link to="/documents?status=en_attente" className="text-xs text-red-600 font-medium hover:underline">
+          <Link to="/app/documents?status=en_attente" className="text-xs text-red-600 font-medium hover:underline">
             Voir <ArrowRight className="w-3 h-3 inline" />
           </Link>
         </div>
@@ -190,13 +190,13 @@ export default function Dashboard() {
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">Clients récents</h2>
-            <Link to="/clients" className="text-xs text-primary-600 hover:underline">Voir tout</Link>
+            <Link to="/app/clients" className="text-xs text-primary-600 hover:underline">Voir tout</Link>
           </div>
           <div className="space-y-3">
             {recentClients.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">Aucun client</p>
             ) : recentClients.map(client => (
-              <Link key={client.id} to={`/clients/${client.id}`}
+              <Link key={client.id} to={`/app/clients/${client.id}`}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group">
                 <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-primary-700 text-sm font-bold">
@@ -214,7 +214,7 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <Link to="/clients/new"
+          <Link to="/app/clients/new"
             className="mt-4 flex items-center justify-center gap-2 w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-400 hover:border-primary-300 hover:text-primary-600 transition-colors">
             <Plus className="w-4 h-4" /> Nouveau client
           </Link>
@@ -225,7 +225,7 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="section-title">Documents récents</h2>
-          <Link to="/documents" className="text-xs text-primary-600 hover:underline">Voir tout</Link>
+          <Link to="/app/documents" className="text-xs text-primary-600 hover:underline">Voir tout</Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -249,7 +249,7 @@ export default function Dashboard() {
               ) : recentDocuments.map(doc => (
                 <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <Link to={`/documents/${doc.id}`} className="font-medium text-primary-600 text-sm hover:underline">
+                    <Link to={`/app/documents/${doc.id}`} className="font-medium text-primary-600 text-sm hover:underline">
                       {doc.number}
                     </Link>
                   </td>

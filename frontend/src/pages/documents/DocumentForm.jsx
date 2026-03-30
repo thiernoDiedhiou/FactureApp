@@ -185,7 +185,7 @@ export default function DocumentForm() {
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to="/documents" className="btn-secondary px-3 py-2">
+        <Link to="/app/documents" className="btn-secondary px-3 py-2">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <h1 className="page-title">
@@ -282,7 +282,7 @@ export default function DocumentForm() {
                       {c.companyName && <p className="text-xs text-gray-400">{c.companyName}</p>}
                     </button>
                   ))}
-                  <Link to="/clients/new" className="flex items-center gap-2 px-4 py-3 text-sm text-primary-600 hover:bg-primary-50 border-t">
+                  <Link to="/app/clients/new" className="flex items-center gap-2 px-4 py-3 text-sm text-primary-600 hover:bg-primary-50 border-t">
                     <Plus className="w-4 h-4" /> Créer un nouveau client
                   </Link>
                 </div>
@@ -461,7 +461,7 @@ export default function DocumentForm() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Link to="/documents" className="btn-secondary">{t('common.cancel')}</Link>
+          <Link to="/app/documents" className="btn-secondary">{t('common.cancel')}</Link>
           <button type="submit" className="btn-primary px-6" disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isEdit ? 'Mettre à jour' : 'Créer le document'}

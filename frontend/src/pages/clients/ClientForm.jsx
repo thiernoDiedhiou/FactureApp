@@ -55,7 +55,7 @@ export default function ClientForm() {
         await api.post('/clients', form);
         toast.success(t('clients.created'));
       }
-      navigate('/clients');
+      navigate('/app/clients');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur');
     } finally {
@@ -71,7 +71,7 @@ export default function ClientForm() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Link to="/clients" className="btn-secondary px-3 py-2">
+        <Link to="/app/clients" className="btn-secondary px-3 py-2">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <h1 className="page-title">
@@ -154,7 +154,7 @@ export default function ClientForm() {
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
-          <Link to="/clients" className="btn-secondary">
+          <Link to="/app/clients" className="btn-secondary">
             {t('common.cancel')}
           </Link>
           <button type="submit" className="btn-primary" disabled={loading}>

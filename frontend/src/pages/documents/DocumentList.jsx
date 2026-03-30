@@ -90,7 +90,7 @@ export default function DocumentList() {
           <h1 className="page-title">{t('documents.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{pagination.total || 0} document(s)</p>
         </div>
-        <Link to="/documents/new" className="btn-primary">
+        <Link to="/app/documents/new" className="btn-primary">
           <Plus className="w-4 h-4" /> {t('documents.new')}
         </Link>
       </div>
@@ -131,7 +131,7 @@ export default function DocumentList() {
           <div className="text-center py-16">
             <FileText className="w-16 h-16 mx-auto text-gray-200 mb-4" />
             <p className="text-gray-500 font-medium">{t('documents.noDocuments')}</p>
-            <Link to="/documents/new" className="btn-primary mt-4 inline-flex">
+            <Link to="/app/documents/new" className="btn-primary mt-4 inline-flex">
               <Plus className="w-4 h-4" /> {t('documents.new')}
             </Link>
           </div>

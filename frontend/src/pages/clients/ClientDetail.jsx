@@ -31,7 +31,7 @@ export default function ClientDetail() {
     try {
       await api.delete(`/clients/${id}`);
       toast.success('Client supprimé');
-      navigate('/clients');
+      navigate('/app/clients');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur suppression');
     } finally {
@@ -55,7 +55,7 @@ export default function ClientDetail() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/clients" className="btn-secondary px-3 py-2">
+          <Link to="/app/clients" className="btn-secondary px-3 py-2">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>

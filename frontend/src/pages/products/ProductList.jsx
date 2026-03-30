@@ -53,7 +53,7 @@ export default function ProductList() {
           <h1 className="page-title">{t('products.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">{products.length} produit(s)</p>
         </div>
-        <Link to="/products/new" className="btn-primary">
+        <Link to="/app/products/new" className="btn-primary">
           <Plus className="w-4 h-4" /> {t('products.new')}
         </Link>
       </div>
@@ -93,7 +93,7 @@ export default function ProductList() {
         <div className="card text-center py-16">
           <Package className="w-16 h-16 mx-auto text-gray-200 mb-4" />
           <p className="text-gray-500 font-medium">{t('products.noProducts')}</p>
-          <Link to="/products/new" className="btn-primary mt-4 inline-flex">
+          <Link to="/app/products/new" className="btn-primary mt-4 inline-flex">
             <Plus className="w-4 h-4" /> {t('products.new')}
           </Link>
         </div>
