@@ -18,8 +18,10 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   skip: skipInDev,
+  // Ne compte que les échecs (4xx/5xx), pas les connexions réussies
+  skipSuccessfulRequests: true,
   message: {
     success: false,
     message: 'Trop de tentatives de connexion, veuillez réessayer dans 15 minutes'
