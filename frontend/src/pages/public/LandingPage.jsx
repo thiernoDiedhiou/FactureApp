@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   FileText, Send, Users, CheckCircle, Zap, Shield,
-  Globe, ArrowRight, Star, ChevronRight,
+  Globe, ArrowRight, Star, ChevronRight, MapPin, Phone, Mail,
 } from 'lucide-react';
 import SEOHead, { SOFTWARE_APP_SCHEMA, WEBSITE_SCHEMA } from '../../components/SEOHead';
 import PublicNav from '../../components/PublicNav';
@@ -295,8 +295,9 @@ export default function LandingPage() {
         {/* ── Footer ──────────────────────────────────────────────── */}
         <footer className="bg-gray-900 text-gray-400 py-12" role="contentinfo">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-              <div className="col-span-2 md:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+              {/* Brand */}
+              <div>
                 <div className="flex items-center gap-2 mb-3">
                   <BrandLogo />
                   <span className="text-white font-bold text-lg">FactureApp</span>
@@ -305,30 +306,62 @@ export default function LandingPage() {
                   Application de facturation en ligne pour les PME et freelances de la zone UEMOA.
                 </p>
               </div>
+
+              {/* Produit */}
               <div>
                 <h3 className="text-white font-semibold text-sm mb-3">Produit</h3>
                 <ul className="space-y-2 text-sm">
                   <li><Link to="/fonctionnalites" className="hover:text-white transition-colors">Fonctionnalités</Link></li>
                   <li><Link to="/tarifs" className="hover:text-white transition-colors">Tarifs</Link></li>
                   <li><Link to="/register" className="hover:text-white transition-colors">Essayer gratuitement</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Support</h3>
-                <ul className="space-y-2 text-sm">
-                  <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Légal</h3>
-                <ul className="space-y-2 text-sm">
                   <li><Link to="/legal/cgu" className="hover:text-white transition-colors">CGU</Link></li>
                   <li><Link to="/legal/privacy" className="hover:text-white transition-colors">Confidentialité</Link></li>
                 </ul>
               </div>
+
+              {/* Développé par */}
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3">Développé par</h3>
+                <p className="text-sm leading-relaxed mb-2">
+                  Conçu et maintenu par <span className="text-white font-medium">InnoSoft</span>, agence spécialisée dans les solutions numériques sur mesure pour l'Afrique.
+                </p>
+                <a
+                  href="https://innosft.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm transition-colors"
+                >
+                  <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+                  innosft.com
+                </a>
+              </div>
+
+              {/* Contact */}
+              <div>
+                <h3 className="text-white font-semibold text-sm mb-3">Nous Contacter</h3>
+                <ul className="space-y-2.5 text-sm">
+                  <li className="flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-500" aria-hidden="true" />
+                    <span>Cité Verte, VCN<br />Thiès, Sénégal</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" aria-hidden="true" />
+                    <a href="tel:+221769365811" className="hover:text-white transition-colors">+221 76 936 58 11</a>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" aria-hidden="true" />
+                    <a href="tel:+221776484558" className="hover:text-white transition-colors">+221 77 648 45 58</a>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0 text-gray-500" aria-hidden="true" />
+                    <a href="mailto:innosoftcreation@gmail.com" className="hover:text-white transition-colors">innosoftcreation@gmail.com</a>
+                  </li>
+                </ul>
+              </div>
             </div>
+
             <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <p>© {new Date().getFullYear()} FactureApp by Innosoft. Tous droits réservés.</p>
+              <p>© {new Date().getFullYear()} FactureApp by InnoSoft. Tous droits réservés.</p>
               <p>Logiciel de facturation Sénégal · Zone UEMOA · Franc CFA (XOF)</p>
             </div>
           </div>

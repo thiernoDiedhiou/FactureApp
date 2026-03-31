@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import PublicNav from '../../components/PublicNav';
-import { Mail, MapPin, Globe } from 'lucide-react';
+import { Mail, MapPin, Globe, Phone } from 'lucide-react';
 import SEOHead, { SOFTWARE_APP_SCHEMA } from '../../components/SEOHead';
 
 export default function Contact() {
@@ -31,23 +31,39 @@ export default function Contact() {
 
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-5 h-5 text-primary-600" aria-hidden="true" />
+                  <MapPin className="w-5 h-5 text-primary-600" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Email</p>
-                  <a href="mailto:contact@innosft.com" className="text-primary-600 hover:underline text-sm">
-                    contact@innosft.com
+                  <p className="font-semibold text-gray-900">Adresse</p>
+                  <p className="text-gray-600 text-sm">Cité Verte, VCN</p>
+                  <p className="text-gray-600 text-sm">Thiès, Sénégal</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-primary-600" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Téléphone</p>
+                  <a href="tel:+221769365811" className="text-primary-600 hover:underline text-sm block">
+                    +221 76 936 58 11
+                  </a>
+                  <a href="tel:+221776484558" className="text-primary-600 hover:underline text-sm block">
+                    +221 77 648 45 58
                   </a>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-primary-600" aria-hidden="true" />
+                  <Mail className="w-5 h-5 text-primary-600" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Localisation</p>
-                  <p className="text-gray-600 text-sm">Thiès, Sénégal — Zone UEMOA</p>
+                  <p className="font-semibold text-gray-900">Email</p>
+                  <a href="mailto:innosoftcreation@gmail.com" className="text-primary-600 hover:underline text-sm">
+                    innosoftcreation@gmail.com
+                  </a>
                 </div>
               </div>
 
@@ -57,8 +73,8 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">Site web</p>
-                  <a href="https://facture.innosft.com" className="text-primary-600 hover:underline text-sm">
-                    facture.innosft.com
+                  <a href="https://innosft.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-sm">
+                    innosft.com
                   </a>
                 </div>
               </div>
