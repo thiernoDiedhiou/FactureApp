@@ -14,7 +14,7 @@ const settingsSchema = z.object({
   ninea: z.string().optional(),
   defaultLanguage: z.enum(['fr', 'en']).default('fr'),
   defaultCurrency: z.enum(['XOF', 'EUR', 'USD']).default('XOF'),
-  defaultTvaRate: z.number().min(0).max(100).default(18),
+  defaultTvaRate: z.coerce.number().min(0).max(100).default(18),
   documentStyle: z.enum(['classique', 'moderne', 'compact']).default('classique'),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Couleur invalide').default('#0EA5E9')
 });
