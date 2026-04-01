@@ -32,7 +32,7 @@ export default function DocumentForm() {
     notes: '',
     status: 'en_attente'
   });
-  const [items, setItems] = useState([{ ...EMPTY_ITEM, tvaRate: settings.defaultTvaRate || 18 }]);
+  const [items, setItems] = useState([{ ...EMPTY_ITEM, tvaRate: settings.defaultTvaRate ?? 18 }]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
   const [clientSearch, setClientSearch] = useState('');
@@ -108,7 +108,7 @@ export default function DocumentForm() {
   const totals = calculateTotals(items, parseFloat(form.discount) || 0);
 
   const addItem = () => {
-    setItems(prev => [...prev, { ...EMPTY_ITEM, tvaRate: settings.defaultTvaRate || 18 }]);
+    setItems(prev => [...prev, { ...EMPTY_ITEM, tvaRate: settings.defaultTvaRate ?? 18 }]);
   };
 
   const removeItem = (idx) => {
@@ -350,6 +350,7 @@ export default function DocumentForm() {
 
                     {/* Quantity */}
                     <div className="col-span-1">
+                      <label className="text-xs text-gray-500 mb-1 block md:hidden">Quantité</label>
                       <input
                         type="number"
                         min="1"
@@ -363,6 +364,7 @@ export default function DocumentForm() {
 
                     {/* Unit price */}
                     <div className="col-span-2">
+                      <label className="text-xs text-gray-500 mb-1 block md:hidden">Prix HT (FCFA)</label>
                       <input
                         type="number"
                         min="0"
@@ -376,6 +378,7 @@ export default function DocumentForm() {
 
                     {/* TVA rate */}
                     <div className="col-span-1">
+                      <label className="text-xs text-gray-500 mb-1 block md:hidden">TVA %</label>
                       <input
                         type="number"
                         min="0"
@@ -389,6 +392,7 @@ export default function DocumentForm() {
 
                     {/* Line total */}
                     <div className="col-span-2 text-right">
+                      <span className="text-xs text-gray-500 mb-1 block md:hidden">Total TTC</span>
                       <span className="text-sm font-semibold text-gray-900">
                         {formatAmount(lineTotal)}
                       </span>
