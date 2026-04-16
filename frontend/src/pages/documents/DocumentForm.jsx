@@ -368,7 +368,6 @@ export default function DocumentForm() {
                       <input
                         type="number"
                         min="0"
-                        step="500"
                         className={`input-field text-sm text-right ${errors[`item_${idx}_price`] ? 'border-red-400' : ''}`}
                         value={item.unitPrice}
                         onChange={(e) => updateItem(idx, 'unitPrice', e.target.value)}
@@ -383,7 +382,6 @@ export default function DocumentForm() {
                         type="number"
                         min="0"
                         max="100"
-                        step="1"
                         className="input-field text-sm text-center"
                         value={item.tvaRate}
                         onChange={(e) => updateItem(idx, 'tvaRate', e.target.value)}
@@ -421,7 +419,6 @@ export default function DocumentForm() {
                   type="number"
                   min="0"
                   max="100"
-                  step="0.5"
                   className="input-field max-w-xs"
                   value={form.discount}
                   onChange={(e) => setForm(f => ({ ...f, discount: e.target.value }))}
