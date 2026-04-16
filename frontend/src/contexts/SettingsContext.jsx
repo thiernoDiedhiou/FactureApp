@@ -17,7 +17,7 @@ const defaultSettings = {
   signaturePath: null,
   defaultLanguage: 'fr',
   defaultCurrency: 'XOF',
-  defaultTvaRate: 0,
+  defaultTvaRate: 18,
   documentStyle: 'classique',
   primaryColor: '#0EA5E9'
 };
