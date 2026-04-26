@@ -22,7 +22,7 @@ const PLANS = [
   },
   {
     name: 'PME',
-    price: '9 900',
+    price: '6 900',
     currency: 'XOF',
     period: '/ mois',
     highlight: true,
@@ -41,7 +41,7 @@ const PLANS = [
   },
   {
     name: 'Entreprise',
-    price: '24 900',
+    price: '11 900',
     currency: 'XOF',
     period: '/ mois',
     highlight: false,
@@ -101,7 +101,7 @@ export default function Pricing() {
             Des tarifs adaptés à chaque activité
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choisissez le plan adapté à votre taille. Tous les plans incluent la <strong>TVA Sénégal 18 %</strong> préconfigurée
+            Choisissez le plan adapté à votre taille. Tous les plans incluent la <strong>TVA Sénégal 18 % modifiable</strong> préconfigurée
             et le support pour les entreprises de la zone UEMOA.
           </p>
         </section>

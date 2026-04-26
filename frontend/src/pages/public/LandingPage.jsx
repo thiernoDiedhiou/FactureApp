@@ -103,8 +103,8 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                La facturation en ligne<br className="hidden sm:block" />
-                simple pour les PME<br className="hidden sm:block" />
+                La facturation en ligne <br className="hidden sm:block" />
+                simple pour les PME <br className="hidden sm:block" />
                 <span className="text-white/90">de la zone UEMOA</span>
               </h1>
 
