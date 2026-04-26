@@ -73,7 +73,7 @@ const FAQS = [
   },
   {
     q: "Combien d'organisations puis-je gérer ?",
-    a: "Selon votre plan, vous pouvez gérer une ou plusieurs organisations depuis un seul compte FactureApp. Les plans supérieurs permettent la gestion multi-organisations idéale pour les cabinets comptables ou groupes d'entreprises.",
+    a: "Selon votre plan, vous pouvez gérer une ou plusieurs organisations depuis un seul compte FactureApp. Les plans supérieurs permettent la gestion multi-organisations, idéale pour les cabinets comptables ou groupes d'entreprises.",
   },
   {
     q: "Comment inviter un membre dans mon organisation ?",

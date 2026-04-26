@@ -144,11 +144,11 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 id="features-heading" className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                Tout ce qu'il faut pour votre gestion facturation freelance et PME
+                Tout ce qu'il faut pour votre gestion de facturation freelance et PME
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Application facturation PME Afrique conçue pour les réalités du marché UEMOA.
-                Facture PDF Afrique de l'Ouest en quelques secondes.
+                Application de facturation pour les PME africaines, conçue pour les réalités du marché UEMOA.
+                Générez vos factures PDF en quelques secondes.
               </p>
             </div>
 
@@ -188,18 +188,17 @@ export default function LandingPage() {
                   <p>
                     FactureApp est le <strong>logiciel de facturation Sénégal</strong> pensé pour les réalités
                     locales. Que vous soyez PME à Dakar, freelance à Abidjan ou prestataire à Bamako,
-                    notre <strong>logiciel facturation conforme UEMOA</strong> vous accompagne.
+                    notre <strong>logiciel de facturation conforme UEMOA</strong> vous accompagne.
                   </p>
                   <p>
-                    Créez une <strong>facture en ligne gratuit</strong> en quelques secondes :
-                    sélectionnez vos produits/services, le taux de <strong>TVA Sénégal 18%</strong>
-                    s'applique automatiquement, et votre <strong>facture PDF Afrique de l'Ouest</strong> est
-                    prête à envoyer.
+                    Créez une <strong>facture en ligne gratuite</strong> en quelques secondes :
+                    sélectionnez vos produits/services, le taux de <strong>TVA Sénégal 18 %</strong>
+                    s'applique automatiquement, et votre <strong>facture PDF</strong> est prête à envoyer.
                   </p>
                   <p>
-                    <strong>Envoyer facture WhatsApp PME Sénégal</strong> ? C'est intégré.
-                    Partagez votre <strong>devis en ligne Sénégal</strong> en un clic via WhatsApp
-                    ou email — la méthode préférée de vos clients.
+                    <strong>Envoyer une facture par WhatsApp</strong> ? C'est intégré.
+                    Partagez vos devis et factures en un clic via WhatsApp ou email —
+                    la méthode préférée de vos clients.
                   </p>
                 </div>
               </div>
@@ -271,8 +270,8 @@ export default function LandingPage() {
               Prêt à simplifier votre facturation en ligne UEMOA ?
             </h2>
             <p className="text-lg text-white/80 mb-8">
-              Rejoignez des centaines d'entreprises et freelances de la zone UEMOA
-              qui font confiance à FactureApp pour leur <strong className="text-white">logiciel comptabilité Dakar</strong> et au-delà.
+              Rejoignez des entrepreneurs et freelances de la zone UEMOA
+              qui font confiance à FactureApp pour leur <strong className="text-white">logiciel de facturation</strong>.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -338,7 +337,7 @@ export default function LandingPage() {
 
               {/* Contact */}
               <div>
-                <h3 className="text-white font-semibold text-sm mb-3">Nous Contacter</h3>
+                <h3 className="text-white font-semibold text-sm mb-3">Nous contacter</h3>
                 <ul className="space-y-2.5 text-sm">
                   <li className="flex items-start gap-2">
                     <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-500" aria-hidden="true" />

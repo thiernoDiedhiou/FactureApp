@@ -18,8 +18,8 @@ const FEATURE_GROUPS = [
   {
     heading: 'Envoi & partage',
     features: [
-      { icon: Send, title: 'Envoi PDF par email', desc: 'Envoyez votre facture PDF Afrique de l\'Ouest directement à votre client depuis l\'application, sans passer par votre messagerie.' },
-      { icon: MessageCircle, title: 'Facture par WhatsApp', desc: 'Partagez vos factures via WhatsApp en un clic — la méthode la plus utilisée pour envoyer facture WhatsApp PME Sénégal.' },
+      { icon: Send, title: 'Envoi PDF par email', desc: 'Envoyez votre facture PDF directement à votre client depuis l\'application, sans passer par votre messagerie.' },
+      { icon: MessageCircle, title: 'Facture par WhatsApp', desc: 'Partagez vos factures via WhatsApp en un clic — la méthode la plus utilisée par les PME au Sénégal.' },
       { icon: Download, title: 'Export PDF instantané', desc: 'Téléchargez vos documents PDF en un clic pour les archiver ou les imprimer.' },
     ],
   },
@@ -36,7 +36,7 @@ const FEATURE_GROUPS = [
     features: [
       { icon: Users, title: 'Gestion multi-membres', desc: 'Invitez vos collaborateurs et assignez des rôles (admin, membre). Travail d\'équipe simplifié au sein de votre organisation.' },
       { icon: Building2, title: 'Multi-organisations', desc: 'Gérez plusieurs structures depuis un seul compte FactureApp — idéal pour les consultants ou groupes d\'entreprises.' },
-      { icon: CheckCircle, title: 'Conformité fiscale UEMOA', desc: 'Logiciel facturation conforme UEMOA : TVA, numérotation, mentions légales. Respect des réglementations du Sénégal, Côte d\'Ivoire, Mali, Burkina Faso.' },
+      { icon: CheckCircle, title: 'Conformité fiscale UEMOA', desc: 'Logiciel de facturation conforme UEMOA : TVA, numérotation, mentions légales. Couvre les réglementations du Sénégal, Côte d\'Ivoire, Mali, Burkina Faso.' },
     ],
   },
 ];
@@ -62,8 +62,8 @@ export default function Features() {
               Toutes les fonctionnalités pour facturer comme un pro
             </h1>
             <p className="text-lg text-white/80 mb-6">
-              Application facturation PME Afrique complète : factures, devis, PDF, WhatsApp et gestion d'équipe.
-              Conçu pour les PME et freelances de la zone UEMOA.
+              Application de facturation complète pour les PME africaines : factures, devis, PDF, WhatsApp et gestion d'équipe.
+              Conçue pour les PME et freelances de la zone UEMOA.
             </p>
             <Link
               to="/register"
@@ -104,7 +104,7 @@ export default function Features() {
         <section className="bg-primary-50 border-t border-primary-100 py-12 text-center">
           <div className="max-w-xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Prêt à créer votre première facture en ligne gratuit ?
+              Prêt à créer votre première facture en ligne gratuite ?
             </h2>
             <p className="text-gray-600 mb-6">
               Logiciel de facturation Sénégal accessible depuis tout appareil — ordinateur, tablette ou mobile.
