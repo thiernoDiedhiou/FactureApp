@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Search, Loader2, ShieldCheck, Shield, Building2 } from 'lucide-react';
+import { Users, Search, Loader2, ShieldCheck, Shield, Building2, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -104,11 +105,15 @@ export default function AdminUsers() {
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
-                            {u.name}
-                            {isMe && <span className="ml-1.5 text-xs text-gray-400">(vous)</span>}
-                          </p>
-                          <p className="text-xs text-gray-400">{u.email}</p>
+                          <Link to={`/admin/users/${u.id}/detail`} className="group">
+                            <p className="font-medium text-gray-900 group-hover:text-amber-600 transition-colors">
+                              {u.name}
+                              {isMe && <span className="ml-1.5 text-xs text-gray-400">(vous)</span>}
+                            </p>
+                          </Link>
+                          <a href={`mailto:${u.email}`} className="text-xs text-gray-400 hover:text-blue-500 transition-colors">
+                            {u.email}
+                          </a>
                         </div>
                       </div>
                     </td>
@@ -143,23 +148,32 @@ export default function AdminUsers() {
                       {new Date(u.createdAt).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="px-4 py-4 text-right">
-                      {!isMe && (
-                        <button
-                          onClick={() => handleToggleSuperAdmin(u)}
-                          disabled={!!actionLoading}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            u.isSuperAdmin
-                              ? 'text-red-600 hover:bg-red-50'
-                              : 'text-amber-600 hover:bg-amber-50'
-                          }`}
+                      <div className="flex items-center gap-1 justify-end">
+                        <Link
+                          to={`/admin/users/${u.id}/detail`}
+                          title="Voir le détail"
+                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                         >
-                          {actionLoading === u.id
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : <ShieldCheck className="w-3.5 h-3.5" />
-                          }
-                          {u.isSuperAdmin ? 'Révoquer' : 'Promouvoir'}
-                        </button>
-                      )}
+                          <Eye className="w-3.5 h-3.5" />
+                        </Link>
+                        {!isMe && (
+                          <button
+                            onClick={() => handleToggleSuperAdmin(u)}
+                            disabled={!!actionLoading}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              u.isSuperAdmin
+                                ? 'text-red-600 hover:bg-red-50'
+                                : 'text-amber-600 hover:bg-amber-50'
+                            }`}
+                          >
+                            {actionLoading === u.id
+                              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              : <ShieldCheck className="w-3.5 h-3.5" />
+                            }
+                            {u.isSuperAdmin ? 'Révoquer' : 'Promouvoir'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

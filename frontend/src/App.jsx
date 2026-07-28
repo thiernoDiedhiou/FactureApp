@@ -15,8 +15,9 @@ import Login          from './pages/auth/Login';
 import Register       from './pages/auth/Register';
 import VerifyEmail    from './pages/auth/VerifyEmail';
 import AcceptInvite   from './pages/auth/AcceptInvite';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import ResetPassword  from './pages/auth/ResetPassword';
+import ForgotPassword  from './pages/auth/ForgotPassword';
+import ResetPassword   from './pages/auth/ResetPassword';
+import PaymentReturn   from './pages/PaymentReturn';
 
 // ── App pages (lazy-loaded — chargées seulement après auth) ──
 const Layout          = lazy(() => import('./components/Layout'));
@@ -38,7 +39,10 @@ const AdminOrganizations = lazy(() => import('./pages/admin/AdminOrganizations')
 const AdminUsers      = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminPlans      = lazy(() => import('./pages/admin/AdminPlans'));
 const AdminUpgrades   = lazy(() => import('./pages/admin/AdminUpgrades'));
-const AdminSettings   = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminSettings       = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminSubscriptions      = lazy(() => import('./pages/admin/AdminSubscriptions'));
+const AdminOrganizationDetail = lazy(() => import('./pages/admin/AdminOrganizationDetail'));
+const AdminUserDetail         = lazy(() => import('./pages/admin/AdminUserDetail'));
 
 // ── Spinner de chargement (Suspense fallback) ──
 const AppLoader = () => (
@@ -102,6 +106,7 @@ export default function App() {
       <Route path="/accept-invite"             element={<AcceptInvite />} />
       <Route path="/forgot-password"           element={<ForgotPassword />} />
       <Route path="/reset-password/:token"     element={<ResetPassword />} />
+      <Route path="/payment/return"            element={<PaymentReturn />} />
 
       {/* ── Application protégée (/app/*) — noindex dans SEOHead ── */}
       <Route
@@ -151,9 +156,12 @@ export default function App() {
         }
       >
         <Route index                element={<Suspense fallback={<AppLoader />}><AdminDashboard /></Suspense>} />
-        <Route path="organizations" element={<Suspense fallback={<AppLoader />}><AdminOrganizations /></Suspense>} />
-        <Route path="users"         element={<Suspense fallback={<AppLoader />}><AdminUsers /></Suspense>} />
+        <Route path="organizations"                    element={<Suspense fallback={<AppLoader />}><AdminOrganizations /></Suspense>} />
+        <Route path="organizations/:id/detail"        element={<Suspense fallback={<AppLoader />}><AdminOrganizationDetail /></Suspense>} />
+        <Route path="users"                           element={<Suspense fallback={<AppLoader />}><AdminUsers /></Suspense>} />
+        <Route path="users/:id/detail"                element={<Suspense fallback={<AppLoader />}><AdminUserDetail /></Suspense>} />
         <Route path="plans"         element={<Suspense fallback={<AppLoader />}><AdminPlans /></Suspense>} />
+        <Route path="subscriptions" element={<Suspense fallback={<AppLoader />}><AdminSubscriptions /></Suspense>} />
         <Route path="upgrades"      element={<Suspense fallback={<AppLoader />}><AdminUpgrades /></Suspense>} />
         <Route path="settings"      element={<Suspense fallback={<AppLoader />}><AdminSettings /></Suspense>} />
       </Route>

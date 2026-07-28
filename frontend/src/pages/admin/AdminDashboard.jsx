@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   Building2, Users, FileText, UserCheck, Loader2, TrendingUp,
-  DollarSign, Activity, AlertTriangle, CheckCircle, ArrowUpRight, Moon
+  DollarSign, Activity, AlertTriangle, CheckCircle, ArrowUpRight, Moon,
+  CreditCard, XCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -161,6 +162,35 @@ export default function AdminDashboard() {
           <p className="text-xs text-gray-400 mt-1">inscriptions ce mois</p>
         </div>
       </div>
+
+      {/* Widget abonnements à risque */}
+      {(stats?.atRiskCount > 0) && (
+        <Link to="/admin/subscriptions?status=at_risk" className="block">
+          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-orange-200 rounded-2xl hover:shadow-md transition-shadow cursor-pointer">
+            <div className="p-3 bg-orange-100 rounded-xl flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-orange-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">
+                {stats.atRiskCount} abonnement{stats.atRiskCount > 1 ? 's' : ''} à risque
+              </p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {stats.expiredCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-red-600 font-medium mr-3">
+                    <XCircle className="w-3.5 h-3.5" /> {stats.expiredCount} expiré{stats.expiredCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                {stats.expiringCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-orange-600 font-medium">
+                    <AlertTriangle className="w-3.5 h-3.5" /> {stats.expiringCount} expire{stats.expiringCount > 1 ? 'nt' : ''} bientôt
+                  </span>
+                )}
+              </p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          </div>
+        </Link>
+      )}
 
       {/* Graphiques */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

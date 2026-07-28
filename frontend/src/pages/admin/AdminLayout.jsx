@@ -5,25 +5,27 @@ import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
-  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2, Search
+  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2, Search, CreditCard
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/admin',              icon: LayoutDashboard, label: 'Tableau de bord', exact: true },
-  { to: '/admin/organizations',icon: Building2,       label: 'Organisations' },
-  { to: '/admin/users',        icon: Users,           label: 'Utilisateurs' },
-  { to: '/admin/plans',        icon: Zap,             label: 'Plans tarifaires' },
-  { to: '/admin/upgrades',     icon: TrendingUp,      label: 'Demandes upgrade' },
-  { to: '/admin/settings',     icon: Settings,        label: 'Paramètres' },
+  { to: '/admin',               icon: LayoutDashboard, label: 'Tableau de bord',  exact: true },
+  { to: '/admin/organizations', icon: Building2,       label: 'Organisations' },
+  { to: '/admin/users',         icon: Users,           label: 'Utilisateurs' },
+  { to: '/admin/plans',         icon: Zap,             label: 'Plans tarifaires' },
+  { to: '/admin/subscriptions', icon: CreditCard,      label: 'Abonnements' },
+  { to: '/admin/upgrades',      icon: TrendingUp,      label: 'Demandes upgrade' },
+  { to: '/admin/settings',      icon: Settings,        label: 'Paramètres' },
 ];
 
 const PAGE_TITLES = {
-  '/admin':               'Tableau de bord',
-  '/admin/organizations': 'Organisations',
-  '/admin/users':         'Utilisateurs',
-  '/admin/plans':         'Plans tarifaires',
-  '/admin/upgrades':      'Demandes upgrade',
-  '/admin/settings':      'Paramètres',
+  '/admin':                'Tableau de bord',
+  '/admin/organizations':  'Organisations',
+  '/admin/users':          'Utilisateurs',
+  '/admin/plans':          'Plans tarifaires',
+  '/admin/subscriptions':  'Abonnements',
+  '/admin/upgrades':       'Demandes upgrade',
+  '/admin/settings':       'Paramètres',
 };
 
 // Modal de sélection d'organisation pour le super admin

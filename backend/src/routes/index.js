@@ -10,6 +10,7 @@ router.use('/settings', require('./settings'));
 router.use('/dashboard', require('./dashboard'));
 router.use('/plans', require('./plans'));
 router.use('/upgrades', require('./upgrades'));
+router.use('/payments', require('./payments'));
 router.use('/admin', require('./admin'));
 
 module.exports = router;

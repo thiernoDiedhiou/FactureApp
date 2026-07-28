@@ -33,13 +33,15 @@ enum MemberRole {
 // ========================
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique // ex: innosoft-creation
-  plan      Plan     @default(FREE)
-  suspended Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String    @id @default(uuid())
+  name          String
+  slug          String    @unique
+  plan          Plan      @default(FREE)
+  suspended     Boolean   @default(false)
+  planStartedAt DateTime? @map("plan_started_at")
+  planExpiresAt DateTime? @map("plan_expires_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   members         OrganizationMember[]
   clients         Client[]
@@ -47,6 +49,7 @@ model Organization {
   documents       Document[]
   settings        Settings?
   upgradeRequests UpgradeRequest[]
+  subscriptions   Subscription[]
 
   @@map("organizations")
 }
@@ -251,18 +254,41 @@ model UpgradeRequest {
   id             String    @id @default(uuid())
   organizationId String    @map("organization_id")
   targetPlan     Plan      @map("target_plan")
-  amount         Int       // montant en FCFA
-  paymentMethod  String    @map("payment_method") // wave | orange_money | free_money | cash
+  amount         Int
+  durationMonths Int       @default(1) @map("duration_months")
+  paymentMethod  String    @map("payment_method")
   transactionRef String?   @map("transaction_ref")
-  status         String    @default("pending")    // pending | validated | rejected
-  notes          String?   // note admin (raison rejet)
+  status         String    @default("pending")
+  notes          String?
   createdAt      DateTime  @default(now()) @map("created_at")
   processedAt    DateTime? @map("processed_at")
-  processedBy    String?   @map("processed_by")  // userId super admin
+  processedBy    String?   @map("processed_by")
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscription Subscription?
 
   @@map("upgrade_requests")
+}
+
+// ========================
+// Historique des abonnements (audit trail immuable)
+// ========================
+
+model Subscription {
+  id               String   @id @default(uuid())
+  organizationId   String   @map("organization_id")
+  plan             Plan
+  startDate        DateTime @map("start_date")
+  endDate          DateTime @map("end_date")
+  durationMonths   Int      @map("duration_months")
+  amount           Int
+  upgradeRequestId String?  @unique @map("upgrade_request_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  upgradeRequest UpgradeRequest? @relation(fields: [upgradeRequestId], references: [id])
+
+  @@map("subscriptions")
 }
 
 // ========================

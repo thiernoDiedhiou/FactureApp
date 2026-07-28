@@ -305,7 +305,14 @@ const me = async (req, res) => {
     select: {
       id: true, name: true, email: true, isSuperAdmin: true, isEmailVerified: true, createdAt: true,
       memberships: {
-        include: { organization: { select: { id: true, name: true, slug: true, plan: true } } },
+        include: {
+          organization: {
+            select: {
+              id: true, name: true, slug: true, plan: true,
+              planStartedAt: true, planExpiresAt: true
+            }
+          }
+        },
         orderBy: { createdAt: 'asc' }
       }
     }

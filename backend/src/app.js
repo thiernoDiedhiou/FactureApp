@@ -35,7 +35,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
-app.use('/api/', generalLimiter);
+// Les webhooks de prestataires de paiement sont exemptés : leurs serveurs peuvent
+// envoyer de nombreux appels depuis une même IP sans que ce soit du spam.
+app.use('/api/', (req, res, next) => {
+  if (req.path.endsWith('/webhook')) return next();
+  return generalLimiter(req, res, next);
+});
 
 // ─── Static Files (uploads) ───────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {

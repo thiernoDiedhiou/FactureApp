@@ -1,139 +1,60 @@
 import { useState, useEffect } from 'react';
-import { Check, Zap, Loader2, X, Copy, CheckCheck, Clock, AlertCircle } from 'lucide-react';
+import { Check, Zap, Loader2, X, Clock, AlertCircle, CalendarDays, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
+const DURATION_OPTIONS = [
+  { months: 1,  label: '1 mois', discount: 0 },
+  { months: 3,  label: '3 mois', discount: 5 },
+  { months: 6,  label: '6 mois', discount: 10 },
+  { months: 12, label: '1 an',   discount: 20 }
+];
+
+function computeTotal(monthlyPrice, months, discount) {
+  return Math.round(monthlyPrice * months * (1 - discount / 100));
+}
+
 const PLAN_STYLES = {
-  FREE:       { badge: 'bg-gray-100 text-gray-700',     btn: 'btn-secondary justify-center',                                              border: 'border-gray-200',  popular: false },
+  FREE:       { badge: 'bg-gray-100 text-gray-700',     btn: 'btn-secondary justify-center',                                                                                                               border: 'border-gray-200',  popular: false },
   STARTER:    { badge: 'bg-blue-100 text-blue-700',     btn: 'bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors justify-center',   border: 'border-blue-400',  popular: false },
-  PRO:        { badge: 'bg-purple-100 text-purple-700', btn: 'btn-primary justify-center',                                               border: 'border-primary-500 ring-2 ring-primary-400 ring-offset-2', popular: true },
+  PRO:        { badge: 'bg-purple-100 text-purple-700', btn: 'btn-primary justify-center',                                                                                                                border: 'border-primary-500 ring-2 ring-primary-400 ring-offset-2', popular: true },
   ENTERPRISE: { badge: 'bg-amber-100 text-amber-700',   btn: 'bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors justify-center', border: 'border-amber-400',  popular: false }
 };
 
-const PAYMENT_METHODS = [
-  {
-    id: 'wave',
-    label: 'Wave',
-    sublabel: 'Mobile Money',
-    bg: 'bg-[#00C2E0]',
-    textColor: 'text-white',
-    logo: (
-      <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#00C2E0"/>
-        {/* Pingouin simplifié */}
-        <ellipse cx="20" cy="26" rx="8" ry="9" fill="white"/>
-        <ellipse cx="20" cy="24" rx="5" ry="6" fill="#1a1a1a"/>
-        <ellipse cx="20" cy="27" rx="4" ry="4" fill="white"/>
-        <circle cx="17.5" cy="21.5" r="1.5" fill="white"/>
-        <circle cx="22.5" cy="21.5" r="1.5" fill="white"/>
-        <circle cx="17.5" cy="21.5" r="0.7" fill="#1a1a1a"/>
-        <circle cx="22.5" cy="21.5" r="0.7" fill="#1a1a1a"/>
-        <ellipse cx="20" cy="25" rx="1.5" ry="1" fill="#FF8C00"/>
-        <ellipse cx="15" cy="28" rx="3" ry="1.5" fill="#FF8C00"/>
-        <ellipse cx="25" cy="28" rx="3" ry="1.5" fill="#FF8C00"/>
-        {/* Bras */}
-        <ellipse cx="12" cy="25" rx="2" ry="4" fill="#1a1a1a" transform="rotate(-15 12 25)"/>
-        <ellipse cx="28" cy="25" rx="2" ry="4" fill="#1a1a1a" transform="rotate(15 28 25)"/>
-      </svg>
-    )
-  },
-  {
-    id: 'orange_money',
-    label: 'Orange Money',
-    sublabel: 'Mobile Money',
-    bg: 'bg-white border-2 border-orange-400',
-    textColor: 'text-gray-800',
-    logo: (
-      <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
-        <circle cx="20" cy="20" r="20" fill="white"/>
-        {/* Flèche haut-droite noire */}
-        <path d="M10 10 L28 10 L28 28" stroke="#1a1a1a" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <path d="M10 10 L28 28" stroke="#1a1a1a" strokeWidth="5" strokeLinecap="round" fill="none"/>
-        {/* Flèche bas-gauche orange */}
-        <path d="M30 30 L12 30 L12 12" stroke="#FF6600" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <path d="M30 30 L12 12" stroke="#FF6600" strokeWidth="5" strokeLinecap="round" fill="none"/>
-      </svg>
-    )
-  },
-  {
-    id: 'free_money',
-    label: 'Mixx by Yas',
-    sublabel: 'Yas Senegal',
-    bg: 'bg-[#003087]',
-    textColor: 'text-white',
-    logo: (
-      <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#003087"/>
-        <text x="20" y="18" textAnchor="middle" fill="#FFD700" fontSize="9" fontWeight="bold" fontFamily="Arial">mixx</text>
-        <rect x="12" y="21" width="16" height="8" rx="4" fill="#FFD700"/>
-        <text x="20" y="27.5" textAnchor="middle" fill="#003087" fontSize="6" fontWeight="bold" fontFamily="Arial">SN</text>
-      </svg>
-    )
-  },
-  {
-    id: 'cash',
-    label: 'Espèces',
-    sublabel: 'Paiement en main',
-    bg: 'bg-gray-100 border-2 border-gray-200',
-    textColor: 'text-gray-700',
-    logo: (
-      <svg viewBox="0 0 40 40" className="w-8 h-8" fill="none">
-        <circle cx="20" cy="20" r="20" fill="#f3f4f6"/>
-        <rect x="8" y="14" width="24" height="16" rx="3" fill="#6b7280" stroke="#9ca3af" strokeWidth="1"/>
-        <rect x="10" y="16" width="20" height="12" rx="2" fill="#4b5563"/>
-        <circle cx="20" cy="22" r="4" fill="#fbbf24"/>
-        <circle cx="20" cy="22" r="2.5" fill="#f59e0b"/>
-        <text x="20" y="23.5" textAnchor="middle" fill="#92400e" fontSize="4" fontWeight="bold">F</text>
-      </svg>
-    )
-  }
-];
+function PaymentModal({ plan, isRenewal, onClose }) {
+  const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
+  const [loading, setLoading] = useState(false);
 
-function PaymentModal({ plan, paymentConfig, onClose, onSuccess }) {
-  const [step, setStep] = useState(1); // 1: méthode, 2: confirmation, 3: référence
-  const [method, setMethod] = useState(null);
-  const [transactionRef, setTransactionRef] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const totalAmount = computeTotal(plan.price, selectedDuration.months, selectedDuration.discount);
 
-  const phone = paymentConfig?.paymentPhone || '+221 77 328 73 76';
-  const payeeName = paymentConfig?.paymentName || 'CFActure';
-
-  const copyPhone = () => {
-    navigator.clipboard.writeText(phone.replace(/\s/g, ''));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
+  const handlePay = async () => {
+    setLoading(true);
     try {
-      await api.post('/upgrades', {
-        targetPlan:    plan.key,
-        paymentMethod: method,
-        transactionRef: transactionRef.trim() || undefined,
-        amount:        plan.price
+      const { data } = await api.post('/payments/moneyfusion/checkout', {
+        targetPlan:     plan.key,
+        durationMonths: selectedDuration.months
       });
-      onSuccess();
+      window.location.href = data.data.checkoutUrl;
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de la soumission');
-    } finally {
-      setSubmitting(false);
+      toast.error(err.response?.data?.message || 'Erreur de paiement. Réessayez.');
+      setLoading(false);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b">
           <div>
             <h2 className="font-bold text-gray-900 text-lg">
-              Passer au plan <span className={`px-2 py-0.5 rounded-full text-sm ${PLAN_STYLES[plan.key]?.badge}`}>{plan.key}</span>
+              {isRenewal ? 'Renouveler' : 'Passer au plan'}{' '}
+              <span className={`px-2 py-0.5 rounded-full text-sm ${PLAN_STYLES[plan.key]?.badge}`}>{plan.key}</span>
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              {plan.price.toLocaleString('fr-FR')} FCFA/mois
+              {plan.price.toLocaleString('fr-FR')} FCFA / mois
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -141,108 +62,61 @@ function PaymentModal({ plan, paymentConfig, onClose, onSuccess }) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
-          {step === 1 && (
-            <>
-              <p className="text-sm text-gray-600 font-medium">Choisissez votre mode de paiement :</p>
-              <div className="grid grid-cols-2 gap-3">
-                {PAYMENT_METHODS.map(m => (
+        <div className="p-5 space-y-5">
+
+          {/* Durée */}
+          <div>
+            <p className="text-sm text-gray-600 font-medium mb-3">Durée d'abonnement :</p>
+            <div className="space-y-2">
+              {DURATION_OPTIONS.map(opt => {
+                const total = computeTotal(plan.price, opt.months, opt.discount);
+                const isSelected = selectedDuration.months === opt.months;
+                return (
                   <button
-                    key={m.id}
-                    onClick={() => { setMethod(m.id); setStep(2); }}
-                    className={`flex items-center gap-3 p-4 rounded-xl transition-all text-left hover:scale-105 hover:shadow-md ${m.bg}`}
+                    key={opt.months}
+                    onClick={() => setSelectedDuration(opt)}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all text-left ${
+                      isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
                   >
-                    {m.logo}
-                    <div>
-                      <p className={`font-bold text-sm leading-tight ${m.textColor}`}>{m.label}</p>
-                      <p className={`text-xs opacity-70 ${m.textColor}`}>{m.sublabel}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary-500' : 'border-gray-300'}`}>
+                        {isSelected && <div className="w-2 h-2 rounded-full bg-primary-500" />}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-gray-900">{opt.label}</p>
+                        {opt.discount > 0 && <p className="text-xs text-green-600 font-medium">-{opt.discount}% de remise</p>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-gray-900 text-sm">{total.toLocaleString('fr-FR')} FCFA</p>
+                      {opt.discount > 0 && (
+                        <p className="text-xs text-gray-400 line-through">{(plan.price * opt.months).toLocaleString('fr-FR')} FCFA</p>
+                      )}
                     </div>
                   </button>
-                ))}
-              </div>
-            </>
-          )}
+                );
+              })}
+            </div>
+          </div>
 
-          {step === 2 && method !== 'cash' && (
-            <>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-blue-800 mb-3">
-                  Envoyez {plan.price.toLocaleString('fr-FR')} FCFA via{' '}
-                  <strong>{PAYMENT_METHODS.find(m => m.id === method)?.label}</strong> à :
-                </p>
-                <div className="flex items-center gap-3 bg-white border border-blue-200 rounded-lg px-4 py-3">
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900 text-lg tracking-wide">{phone}</p>
-                    <p className="text-xs text-gray-500">{payeeName}</p>
-                  </div>
-                  <button onClick={copyPhone} className="p-2 hover:bg-blue-50 rounded-lg transition-colors">
-                    {copied ? <CheckCheck className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-blue-500" />}
-                  </button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500">
-                Après le transfert, entrez la référence de transaction ci-dessous.
-              </p>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                  Référence de transaction (ID Wave/OM)
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Ex: W2409187654..."
-                  value={transactionRef}
-                  onChange={e => setTransactionRef(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button onClick={() => setStep(1)} className="btn-secondary flex-1">Retour</button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
-                >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                  Soumettre
-                </button>
-              </div>
-            </>
-          )}
+          {/* Paiement Money Fusion */}
+          <button
+            onClick={handlePay}
+            disabled={loading}
+            className="w-full rounded-xl bg-gradient-to-r from-[#00C8D7] to-[#007a87] hover:opacity-90 disabled:opacity-60 transition-all p-4 text-left"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-bold text-white text-xl">{totalAmount.toLocaleString('fr-FR')} FCFA</p>
+              {loading
+                ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                : <Zap className="w-5 h-5 text-white" />
+              }
+            </div>
+            <p className="text-white/70 text-xs">Wave · Orange Money · Free Money · Expresso</p>
+            <p className="text-white/50 text-xs mt-1">Activation immédiate — paiement sécurisé via Money Fusion</p>
+          </button>
 
-          {step === 2 && method === 'cash' && (
-            <>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-                <p className="text-sm font-semibold text-amber-800">Paiement en espèces</p>
-                <p className="text-sm text-amber-700">
-                  Contactez-nous par email ou WhatsApp pour convenir d'un rendez-vous de paiement en espèces.
-                </p>
-                <p className="text-sm font-medium text-amber-900">{paymentConfig?.supportEmail || 'contact@factureapp.sn'}</p>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                  Note (optionnel)
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Votre disponibilité, ville..."
-                  value={transactionRef}
-                  onChange={e => setTransactionRef(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button onClick={() => setStep(1)} className="btn-secondary flex-1">Retour</button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
-                >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                  Envoyer la demande
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </div>
@@ -251,18 +125,32 @@ function PaymentModal({ plan, paymentConfig, onClose, onSuccess }) {
 
 export default function Plans() {
   const { organization } = useAuth();
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans]               = useState([]);
   const [paymentConfig, setPaymentConfig] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]           = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isRenewal, setIsRenewal]       = useState(false);
   const [pendingRequest, setPendingRequest] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const currentPlan = organization?.plan || 'FREE';
+
+  const currentPlan   = organization?.plan || 'FREE';
+  const planExpiresAt = organization?.planExpiresAt || null;
+
+  const daysRemaining = planExpiresAt
+    ? Math.ceil((new Date(planExpiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const subscriptionStatus = !planExpiresAt || currentPlan === 'FREE'
+    ? 'free'
+    : daysRemaining <= 0
+      ? 'expired'
+      : daysRemaining <= 7
+        ? 'expiring_soon'
+        : 'active';
 
   useEffect(() => {
-    const fetchPlans = api.get('/plans').then(r => r.data.data.plans).catch(() => []);
+    const fetchPlans  = api.get('/plans').then(r => r.data.data.plans).catch(() => []);
     const fetchConfig = api.get('/plans/payment-config').then(r => r.data.data.config).catch(() => null);
-    const fetchMine = api.get('/upgrades/mine').then(r => r.data.data.requests).catch(() => []);
+    const fetchMine   = api.get('/upgrades/mine').then(r => r.data.data.requests).catch(() => []);
 
     Promise.all([fetchPlans, fetchConfig, fetchMine]).then(([p, c, r]) => {
       setPlans(p);
@@ -270,14 +158,6 @@ export default function Plans() {
       setPendingRequest(r.find(req => req.status === 'pending') || null);
     }).finally(() => setLoading(false));
   }, []);
-
-  const handleSuccess = () => {
-    setSelectedPlan(null);
-    setSuccess(true);
-    api.get('/upgrades/mine').then(r => {
-      setPendingRequest(r.data.data.requests.find(req => req.status === 'pending') || null);
-    });
-  };
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -294,24 +174,35 @@ export default function Plans() {
         </p>
       </div>
 
-      {/* Bannière demande en attente */}
-      {pendingRequest && (
-        <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
-          <Clock className="w-5 h-5 flex-shrink-0 text-amber-500" />
-          <span>
-            <strong>Demande en cours</strong> — Votre demande de passage au plan{' '}
-            <strong>{pendingRequest.targetPlan}</strong> est en attente de validation par notre équipe.
-            Nous traitons les demandes sous 24h.
+      {/* Bannière expiration imminente ou dépassée */}
+      {(subscriptionStatus === 'expiring_soon' || subscriptionStatus === 'expired') && !pendingRequest && (
+        <div className={`mb-6 flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+          subscriptionStatus === 'expired'
+            ? 'bg-red-50 border border-red-300 text-red-800'
+            : 'bg-orange-50 border border-orange-300 text-orange-800'
+        }`}>
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span className="flex-1">
+            {subscriptionStatus === 'expired'
+              ? <><strong>Abonnement expiré</strong> — Votre plan {currentPlan} a expiré le{' '}
+                  {new Date(planExpiresAt).toLocaleDateString('fr-FR')}. Renouvelez pour continuer à bénéficier de toutes les fonctionnalités.</>
+              : <><strong>Expire bientôt</strong> — Votre plan {currentPlan} expire dans{' '}
+                  <strong>{daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</strong> ({new Date(planExpiresAt).toLocaleDateString('fr-FR')}).</>
+            }
           </span>
         </div>
       )}
 
-      {/* Bannière succès */}
-      {success && (
-        <div className="mb-6 flex items-center gap-3 bg-green-50 border border-green-300 rounded-xl px-4 py-3 text-sm text-green-800">
-          <CheckCheck className="w-5 h-5 flex-shrink-0 text-green-500" />
-          <span>
-            <strong>Demande envoyée !</strong> Notre équipe validera votre paiement sous 24h et votre plan sera mis à jour automatiquement.
+      {/* Bannière paiement en cours */}
+      {pendingRequest && (
+        <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
+          <Clock className="w-5 h-5 flex-shrink-0 text-amber-500" />
+          <span className="flex-1">
+            <strong>Paiement en cours</strong> — Votre paiement pour le plan{' '}
+            <strong>{pendingRequest.targetPlan}</strong> est en attente de confirmation.{' '}
+            <a href={`/payment/return?ref=${pendingRequest.id}`} className="underline text-amber-900 hover:text-amber-700">
+              Vérifier le statut →
+            </a>
           </span>
         </div>
       )}
@@ -319,11 +210,12 @@ export default function Plans() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {plans.map((plan) => {
           const style = PLAN_STYLES[plan.key] || PLAN_STYLES.FREE;
-          const isCurrent = plan.key === currentPlan;
-          const features = Array.isArray(plan.features) ? plan.features : [];
+          const isCurrent   = plan.key === currentPlan;
+          const features    = Array.isArray(plan.features) ? plan.features : [];
           const isEnterprise = plan.key === 'ENTERPRISE';
-          const PLAN_ORDER = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
-          const isUpgrade = PLAN_ORDER.indexOf(plan.key) > PLAN_ORDER.indexOf(currentPlan);
+          const PLAN_ORDER   = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+          const isUpgrade    = PLAN_ORDER.indexOf(plan.key) > PLAN_ORDER.indexOf(currentPlan);
+          const canRenew     = isCurrent && currentPlan !== 'FREE' && plan.price > 0;
 
           return (
             <div
@@ -374,8 +266,34 @@ export default function Plans() {
               </ul>
 
               {isCurrent ? (
-                <div className="w-full text-center py-2.5 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl">
-                  Plan actuel
+                <div className="space-y-2">
+                  <div className="w-full text-center py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl">
+                    Plan actuel
+                  </div>
+                  {planExpiresAt && (
+                    <div className={`flex items-center justify-center gap-1.5 text-xs rounded-lg py-1.5 px-2 ${
+                      subscriptionStatus === 'expired'      ? 'bg-red-50 text-red-600'    :
+                      subscriptionStatus === 'expiring_soon'? 'bg-orange-50 text-orange-600' :
+                      'bg-gray-50 text-gray-500'
+                    }`}>
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      {subscriptionStatus === 'expired'
+                        ? `Expiré le ${new Date(planExpiresAt).toLocaleDateString('fr-FR')}`
+                        : `Expire le ${new Date(planExpiresAt).toLocaleDateString('fr-FR')}`
+                      }
+                    </div>
+                  )}
+                  {canRenew && (
+                    <button
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={!!pendingRequest}
+                      onClick={() => { setSelectedPlan(plan); setIsRenewal(true); }}
+                      title={pendingRequest ? 'Un paiement est déjà en cours' : ''}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      {pendingRequest ? 'Paiement en cours…' : 'Renouveler'}
+                    </button>
+                  )}
                 </div>
               ) : isEnterprise ? (
                 <a
@@ -388,11 +306,11 @@ export default function Plans() {
                 <button
                   className={style.btn}
                   disabled={!!pendingRequest}
-                  onClick={() => setSelectedPlan(plan)}
-                  title={pendingRequest ? 'Une demande est déjà en attente' : ''}
+                  onClick={() => { setSelectedPlan(plan); setIsRenewal(false); }}
+                  title={pendingRequest ? 'Un paiement est déjà en cours' : ''}
                 >
                   <Zap className="w-4 h-4" />
-                  {pendingRequest ? 'Demande en cours...' : `Passer au ${plan.key.charAt(0) + plan.key.slice(1).toLowerCase()}`}
+                  {pendingRequest ? 'Paiement en cours…' : `Passer au ${plan.key.charAt(0) + plan.key.slice(1).toLowerCase()}`}
                 </button>
               ) : (
                 <div className="w-full text-center py-2.5 bg-gray-50 text-gray-400 text-sm rounded-xl flex items-center justify-center gap-1">
@@ -405,7 +323,7 @@ export default function Plans() {
       </div>
 
       <p className="text-center text-xs text-gray-400 mt-8">
-        Paiement mensuel, sans engagement. Pour toute question :{' '}
+        Abonnement sans engagement — 1 à 12 mois, sans frais cachés. Pour toute question :{' '}
         <a href={`mailto:${paymentConfig?.supportEmail || 'contact@factureapp.sn'}`} className="text-primary-600 hover:underline">
           {paymentConfig?.supportEmail || 'contact@factureapp.sn'}
         </a>
@@ -414,9 +332,8 @@ export default function Plans() {
       {selectedPlan && (
         <PaymentModal
           plan={selectedPlan}
-          paymentConfig={paymentConfig}
-          onClose={() => setSelectedPlan(null)}
-          onSuccess={handleSuccess}
+          isRenewal={isRenewal}
+          onClose={() => { setSelectedPlan(null); setIsRenewal(false); }}
         />
       )}
     </div>
