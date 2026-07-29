@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const PLAN_COLORS = {
   FREE: 'bg-gray-100 text-gray-500',
@@ -14,6 +15,7 @@ const PLAN_COLORS = {
 
 export default function AdminUsers() {
   const { user: currentUser } = useAuth();
+  const { confirm } = useConfirm();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,7 +41,12 @@ export default function AdminUsers() {
 
   const handleToggleSuperAdmin = async (u) => {
     const action = u.isSuperAdmin ? 'révoquer les droits Super Admin de' : 'promouvoir';
-    if (!window.confirm(`Voulez-vous ${action} ${u.name} en Super Admin ?`)) return;
+    const ok = await confirm({
+      title:        u.isSuperAdmin ? 'Révoquer Super Admin' : 'Promouvoir en Super Admin',
+      message:      `Voulez-vous ${action} ${u.name} ?`,
+      confirmLabel: u.isSuperAdmin ? 'Révoquer' : 'Promouvoir'
+    });
+    if (!ok) return;
     setActionLoading(u.id);
     try {
       const { data } = await api.patch(`/admin/users/${u.id}/superadmin`);

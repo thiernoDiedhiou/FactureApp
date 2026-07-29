@@ -8,6 +8,7 @@ import {
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const PLAN_COLORS = {
   FREE:       'bg-gray-100 text-gray-600',
@@ -58,6 +59,7 @@ export default function AdminUserDetail() {
   const { id }       = useParams();
   const navigate     = useNavigate();
   const { user: me } = useAuth();
+  const { confirm } = useConfirm();
 
   const [user, setUser]           = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -73,7 +75,12 @@ export default function AdminUserDetail() {
 
   const handleToggleSuperAdmin = async () => {
     const action = user.isSuperAdmin ? 'révoquer les droits Super Admin de' : 'promouvoir';
-    if (!window.confirm(`${action} ${user.name} ?`)) return;
+    const ok = await confirm({
+      title:        user.isSuperAdmin ? 'Révoquer Super Admin' : 'Promouvoir en Super Admin',
+      message:      `${action} ${user.name} ?`,
+      confirmLabel: user.isSuperAdmin ? 'Révoquer' : 'Promouvoir'
+    });
+    if (!ok) return;
     setActionLoading(true);
     try {
       const { data } = await api.patch(`/admin/users/${id}/superadmin`);

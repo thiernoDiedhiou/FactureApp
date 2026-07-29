@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const PLAN_COLORS = {
   FREE:       'bg-gray-100 text-gray-600',
@@ -75,6 +76,7 @@ function ContactRow({ icon: Icon, label, value, href, color = 'text-gray-400' })
 export default function AdminOrganizationDetail() {
   const { id }     = useParams();
   const navigate   = useNavigate();
+  const { confirm } = useConfirm();
   const [org, setOrg]               = useState(null);
   const [loading, setLoading]       = useState(true);
   const [tab, setTab]               = useState('apercu');
@@ -88,7 +90,12 @@ export default function AdminOrganizationDetail() {
   }, [id, navigate]);
 
   const handleToggleSuspend = async () => {
-    if (!window.confirm(`${org.suspended ? 'Réactiver' : 'Suspendre'} "${org.name}" ?`)) return;
+    const ok = await confirm({
+      title:        org.suspended ? 'Réactiver l\'organisation' : 'Suspendre l\'organisation',
+      message:      `${org.suspended ? 'Réactiver' : 'Suspendre'} "${org.name}" ?`,
+      confirmLabel: org.suspended ? 'Réactiver' : 'Suspendre'
+    });
+    if (!ok) return;
     setActionLoading('suspend');
     try {
       const { data } = await api.patch(`/admin/organizations/${id}/suspend`);

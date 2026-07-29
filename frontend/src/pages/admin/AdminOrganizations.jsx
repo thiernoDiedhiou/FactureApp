@@ -6,6 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const PLANS = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
 
@@ -37,6 +38,7 @@ function formatShortDate(date) {
 }
 
 export default function AdminOrganizations() {
+  const { confirm } = useConfirm();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -80,7 +82,12 @@ export default function AdminOrganizations() {
 
   const handleToggleSuspend = async (org) => {
     const action = org.suspended ? 'réactiver' : 'suspendre';
-    if (!window.confirm(`Voulez-vous ${action} l'organisation "${org.name}" ?`)) return;
+    const ok = await confirm({
+      title:        org.suspended ? 'Réactiver l\'organisation' : 'Suspendre l\'organisation',
+      message:      `Voulez-vous ${action} "${org.name}" ?`,
+      confirmLabel: org.suspended ? 'Réactiver' : 'Suspendre'
+    });
+    if (!ok) return;
     setActionLoading(`suspend-${org.id}`);
     try {
       const { data } = await api.patch(`/admin/organizations/${org.id}/suspend`);
@@ -94,7 +101,13 @@ export default function AdminOrganizations() {
   };
 
   const handleDelete = async (org) => {
-    if (!window.confirm(`⚠️ SUPPRIMER DÉFINITIVEMENT "${org.name}" et toutes ses données ?\n\nCette action est irréversible.`)) return;
+    const ok = await confirm({
+      title:        'Supprimer définitivement',
+      message:      `Supprimer "${org.name}" et toutes ses données ? Cette action est irréversible.`,
+      danger:       true,
+      confirmLabel: 'Supprimer'
+    });
+    if (!ok) return;
     setActionLoading(`delete-${org.id}`);
     try {
       const { data } = await api.delete(`/admin/organizations/${org.id}`);

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useConfirm } from '../contexts/ConfirmContext';
 import api from '../utils/api';
 
 const ROLE_LABELS = {
@@ -23,6 +24,7 @@ const PLAN_LABELS = {
 
 export default function Organization() {
   const { user } = useAuth();
+  const { confirm } = useConfirm();
   const [org, setOrg] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,13 @@ export default function Organization() {
   };
 
   const handleRemove = async (userId, memberName) => {
-    if (!window.confirm(`Retirer ${memberName} de l'organisation ?`)) return;
+    const ok = await confirm({
+      title:        'Retirer le membre',
+      message:      `Retirer ${memberName} de l'organisation ?`,
+      danger:       true,
+      confirmLabel: 'Retirer'
+    });
+    if (!ok) return;
     setRemoving(userId);
     try {
       await api.delete(`/organizations/members/${userId}`);
