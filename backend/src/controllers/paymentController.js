@@ -16,10 +16,11 @@ const PLAN_ORDER = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
 const createMoneyFusionCheckout = async (req, res) => {
   const schema = z.object({
     targetPlan:     z.enum(['STARTER', 'PRO', 'ENTERPRISE']),
-    durationMonths: z.number().int().min(1).max(12).default(1)
+    durationMonths: z.number().int().min(1).max(12).default(1),
+    phone:          z.string().min(8).max(20)
   });
 
-  const { targetPlan, durationMonths } = schema.parse(req.body);
+  const { targetPlan, durationMonths, phone } = schema.parse(req.body);
 
   const org = await prisma.organization.findUnique({ where: { id: req.organizationId } });
   if (!org) throw new AppError('Organisation introuvable', 404);
@@ -63,7 +64,7 @@ const createMoneyFusionCheckout = async (req, res) => {
     mfData = await createPayment({
       totalPrice:  amount,
       article:     [{ [`CFActure Plan ${targetPlan} — ${durationMonths} mois`]: amount }],
-      numeroSend:  '',
+      numeroSend:  phone.replace(/[\s\-]/g, ''),
       nomclient:   org.name,
       // Pas de ?status= hardcodé : Money Fusion utilise la même URL quelle que soit l'issue.
       // PaymentReturn.jsx détecte le résultat en interrogeant notre API (polling).

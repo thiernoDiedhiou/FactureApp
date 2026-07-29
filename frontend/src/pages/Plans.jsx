@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Check, Zap, Loader2, X, Clock, AlertCircle, CalendarDays, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
@@ -24,16 +24,25 @@ const PLAN_STYLES = {
 
 function PaymentModal({ plan, isRenewal, onClose }) {
   const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
+  const [phone, setPhone]     = useState('');
   const [loading, setLoading] = useState(false);
+  const phoneRef = useRef(null);
 
   const totalAmount = computeTotal(plan.price, selectedDuration.months, selectedDuration.discount);
 
   const handlePay = async () => {
+    const cleaned = phone.replace(/[\s\-]/g, '');
+    if (cleaned.length < 8) {
+      toast.error('Entrez votre numéro Wave, Orange Money ou Free Money');
+      phoneRef.current?.focus();
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await api.post('/payments/moneyfusion/checkout', {
         targetPlan:     plan.key,
-        durationMonths: selectedDuration.months
+        durationMonths: selectedDuration.months,
+        phone:          cleaned
       });
       window.location.href = data.data.checkoutUrl;
     } catch (err) {
@@ -101,21 +110,35 @@ function PaymentModal({ plan, isRenewal, onClose }) {
           </div>
 
           {/* Paiement Money Fusion */}
-          <button
-            onClick={handlePay}
-            disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-[#00C8D7] to-[#007a87] hover:opacity-90 disabled:opacity-60 transition-all p-4 text-left"
-          >
-            <div className="flex items-center justify-between mb-1">
+          <div className="rounded-xl bg-gradient-to-r from-[#00C8D7] to-[#007a87] p-4 space-y-3">
+            <div className="flex items-center justify-between">
               <p className="font-bold text-white text-xl">{totalAmount.toLocaleString('fr-FR')} FCFA</p>
-              {loading
-                ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                : <Zap className="w-5 h-5 text-white" />
-              }
+              <p className="text-white/70 text-xs text-right leading-relaxed">
+                Wave · Orange Money<br />Free Money · Expresso
+              </p>
             </div>
-            <p className="text-white/70 text-xs">Wave · Orange Money · Free Money · Expresso</p>
-            <p className="text-white/50 text-xs mt-1">Activation immédiate — paiement sécurisé via Money Fusion</p>
-          </button>
+            <div className="flex gap-2">
+              <input
+                ref={phoneRef}
+                type="tel"
+                className="flex-1 bg-white/20 text-white placeholder-white/60 rounded-lg px-3 py-2.5 text-sm border border-white/30 focus:outline-none focus:border-white"
+                placeholder="7X XXX XX XX"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handlePay()}
+              />
+              <button
+                onClick={handlePay}
+                disabled={loading || phone.replace(/[\s\-]/g, '').length < 8}
+                className="bg-white text-primary-700 font-bold px-5 py-2.5 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors flex items-center gap-2 flex-shrink-0"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> Payer</>}
+              </button>
+            </div>
+            <p className="text-white/60 text-xs text-center">
+              Activation immédiate — paiement sécurisé via Money Fusion
+            </p>
+          </div>
 
         </div>
       </div>

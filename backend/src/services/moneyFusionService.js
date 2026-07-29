@@ -18,20 +18,23 @@ async function createPayment({ totalPrice, article, numeroSend, nomclient, retur
   const apiUrl = process.env.MONEYFUSION_API_URL;
   if (!apiUrl) throw new Error('MONEYFUSION_API_URL non configuré');
 
+  const body = {
+    totalPrice,
+    article,
+    nomclient,
+    return_url:    returnUrl,
+    webhook_url:   webhookUrl,
+    personal_Info: personalInfo
+  };
+  // Money Fusion rejette les chaînes vides — on n'envoie le champ que s'il est renseigné
+  if (numeroSend) body.numeroSend = numeroSend;
+
   let response;
   try {
     response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        totalPrice,
-        article,
-        numeroSend,
-        nomclient,
-        return_url:    returnUrl,
-        webhook_url:   webhookUrl,
-        personal_Info: personalInfo
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(CHECKOUT_TIMEOUT_MS)
     });
   } catch (err) {
