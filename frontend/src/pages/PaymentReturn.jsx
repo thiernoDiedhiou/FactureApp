@@ -4,8 +4,8 @@ import { CheckCircle, XCircle, Loader2, Zap, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
-const POLL_INTERVAL_MS = 2500;
-const MAX_ATTEMPTS     = 20; // 50 secondes max avant timeout
+const POLL_INTERVAL_MS = 5000;
+const MAX_ATTEMPTS     = 24; // 2 minutes max avant timeout
 
 export default function PaymentReturn() {
   const [params]   = useSearchParams();

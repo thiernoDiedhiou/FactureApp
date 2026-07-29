@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const path = require('path');
 
 const { errorHandler } = require('./middlewares/errorHandler');
-const { generalLimiter } = require('./middlewares/rateLimiter');
+const { publicLimiter, authenticatedLimiter } = require('./middlewares/rateLimiter');
 const routes = require('./routes');
 
 const app = express();
@@ -35,11 +35,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
-// Les webhooks de prestataires de paiement sont exemptés : leurs serveurs peuvent
-// envoyer de nombreux appels depuis une même IP sans que ce soit du spam.
+// Deux niveaux selon l'état d'authentification :
+// • Token présent  → authenticatedLimiter (500 req/15min, clé = userId)
+//   Évite que des utilisateurs derrière le même NAT se bloquent mutuellement.
+// • Pas de token   → publicLimiter (200 req/15min, clé = IP)
+// • Webhook        → aucun limiteur (les serveurs MF peuvent envoyer plusieurs
+//   appels depuis la même IP sans que ce soit du spam)
 app.use('/api/', (req, res, next) => {
   if (req.path.endsWith('/webhook')) return next();
-  return generalLimiter(req, res, next);
+  const hasToken = req.headers.authorization?.startsWith('Bearer ');
+  return hasToken
+    ? authenticatedLimiter(req, res, next)
+    : publicLimiter(req, res, next);
 });
 
 // ─── Static Files (uploads) ───────────────────────────────────────────────────
