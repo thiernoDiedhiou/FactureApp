@@ -244,6 +244,9 @@ const moneyFusionWebhook = async (req, res) => {
  * GET /api/payments/moneyfusion/status/:ref
  * Retourne le statut d'un UpgradeRequest pour que PaymentReturn.jsx
  * puisse savoir si le paiement a été confirmé, annulé ou est encore en cours.
+ *
+ * Si la DB dit "pending" et qu'un transactionRef existe, on interroge MF
+ * directement — récupération automatique en cas de webhook manquant.
  */
 const getPaymentStatus = async (req, res) => {
   const upgradeReq = await prisma.upgradeRequest.findUnique({
@@ -254,12 +257,87 @@ const getPaymentStatus = async (req, res) => {
     throw new AppError('Demande introuvable', 404);
   }
 
+  // Résolu côté DB → réponse immédiate
+  if (upgradeReq.status !== 'pending') {
+    return res.json({
+      success: true,
+      data: { status: upgradeReq.status, targetPlan: upgradeReq.targetPlan }
+    });
+  }
+
+  // Pending sans token MF → rien à vérifier
+  if (!upgradeReq.transactionRef) {
+    return res.json({
+      success: true,
+      data: { status: 'pending', targetPlan: upgradeReq.targetPlan }
+    });
+  }
+
+  // Interroger MF directement — récupération en cas de webhook manquant
+  let verification;
+  try {
+    verification = await verifyPayment(upgradeReq.transactionRef);
+  } catch (err) {
+    // MF injoignable : on retourne pending sans erreur pour que le polling continue
+    console.warn(`[MF status] Vérification MF impossible (${err.message}) — statut DB retourné`);
+    return res.json({
+      success: true,
+      data: { status: 'pending', targetPlan: upgradeReq.targetPlan }
+    });
+  }
+
+  const mfStatut = verification.data?.statut;
+
+  if (mfStatut === 'paid') {
+    // Webhook manquant — activer le plan maintenant
+    const org = await prisma.organization.findUnique({ where: { id: upgradeReq.organizationId } });
+    const newStartedAt = new Date();
+    const newExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
+
+    await prisma.$transaction([
+      prisma.organization.update({
+        where: { id: upgradeReq.organizationId },
+        data:  { plan: upgradeReq.targetPlan, planStartedAt: newStartedAt, planExpiresAt: newExpiresAt }
+      }),
+      prisma.upgradeRequest.update({
+        where: { id: upgradeReq.id },
+        data:  { status: 'validated', processedAt: new Date(), processedBy: 'status_poll_recovery' }
+      }),
+      prisma.subscription.create({
+        data: {
+          organizationId:   upgradeReq.organizationId,
+          plan:             upgradeReq.targetPlan,
+          startDate:        newStartedAt,
+          endDate:          newExpiresAt,
+          durationMonths:   upgradeReq.durationMonths,
+          amount:           upgradeReq.amount,
+          upgradeRequestId: upgradeReq.id
+        }
+      })
+    ]);
+
+    console.log(`[MF status] Récupération webhook — plan activé : org=${upgradeReq.organizationId} plan=${upgradeReq.targetPlan}`);
+    return res.json({
+      success: true,
+      data: { status: 'validated', targetPlan: upgradeReq.targetPlan }
+    });
+  }
+
+  if (mfStatut === 'cancelled' || mfStatut === 'failed') {
+    await prisma.upgradeRequest.update({
+      where: { id: upgradeReq.id },
+      data:  { status: 'rejected' }
+    });
+    return res.json({
+      success: true,
+      data: { status: 'rejected', targetPlan: upgradeReq.targetPlan }
+    });
+  }
+
+  // MF dit encore "pending" → le polling continue
   res.json({
     success: true,
-    data: {
-      status:     upgradeReq.status,      // 'pending' | 'validated' | 'rejected'
-      targetPlan: upgradeReq.targetPlan
-    }
+    data: { status: 'pending', targetPlan: upgradeReq.targetPlan }
   });
 };
 
