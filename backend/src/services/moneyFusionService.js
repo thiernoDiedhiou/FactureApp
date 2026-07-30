@@ -1,4 +1,4 @@
-const MONEYFUSION_VERIFY_BASE = 'https://www.pay.moneyfusion.net/paiementNotif';
+const MONEYFUSION_VERIFY_BASE = 'https://pay.moneyfusion.net/paiementNotif';
 
 // Timeout généreux pour la création (l'utilisateur attend la redirection)
 // et plus court pour la vérification (appelée dans le webhook)

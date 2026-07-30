@@ -13,6 +13,9 @@ const routes = require('./routes');
 
 const app = express();
 
+// Nginx reverse proxy — nécessaire pour que le rate limiter utilise l'IP réelle
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ──────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
