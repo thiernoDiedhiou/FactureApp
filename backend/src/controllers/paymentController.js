@@ -107,6 +107,8 @@ const createMoneyFusionCheckout = async (req, res) => {
 const moneyFusionWebhook = async (req, res) => {
   const event = req.body;
 
+  console.log('[MF webhook] Événement reçu:', JSON.stringify(event));
+
   // Paiement annulé ou échoué : libérer l'UpgradeRequest pour que l'utilisateur puisse réessayer
   if (event.event === 'payin.session.cancelled') {
     const payToken = event.tokenPay;
@@ -122,6 +124,7 @@ const moneyFusionWebhook = async (req, res) => {
 
   // La doc Money Fusion utilise le champ "event" (pas "type")
   if (event.event !== 'payin.session.completed') {
+    console.log(`[MF webhook] Événement ignoré, type="${event.event}"`);
     return res.json({ success: true, received: true });
   }
 
