@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
+import { handleFormError } from '../../utils/formErrors';
 
 export default function ClientForm() {
   const { t } = useTranslation();
@@ -57,7 +58,7 @@ export default function ClientForm() {
       }
       navigate('/app/clients');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(handleFormError(err, setErrors));
     } finally {
       setLoading(false);
     }

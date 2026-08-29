@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import api from '../../utils/api';
 import { useSettings, useFormatCurrency } from '../../contexts/SettingsContext';
+import { handleFormError } from '../../utils/formErrors';
 
 export default function ProductForm() {
   const { t } = useTranslation();
@@ -53,8 +54,9 @@ export default function ProductForm() {
   const validate = () => {
     const errs = {};
     if (!form.name.trim()) errs.name = t('errors.required');
-    if (!form.price || parseFloat(form.price) < 0) errs.price = 'Prix invalide';
-    if (isNaN(form.tvaRate) || form.tvaRate < 0 || form.tvaRate > 100) errs.tvaRate = 'Taux TVA invalide (0-100)';
+    if (form.price === '' || parseFloat(form.price) < 0) errs.price = 'Prix invalide (≥ 0)';
+    const tvaVal = parseFloat(String(form.tvaRate).trim());
+    if (isNaN(tvaVal) || tvaVal < 0 || tvaVal > 100) errs.tvaRate = 'Taux TVA invalide (0–100)';
     return errs;
   };
 
@@ -78,7 +80,7 @@ export default function ProductForm() {
       }
       navigate('/app/products');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(handleFormError(err, setErrors));
     } finally {
       setLoading(false);
     }

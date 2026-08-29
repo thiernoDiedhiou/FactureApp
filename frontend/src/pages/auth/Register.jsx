@@ -6,6 +6,7 @@ import { User, Mail, Lock, Loader2, Building2, ShieldCheck, Zap, Globe } from 'l
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
 import SEOHead from '../../components/SEOHead';
+import { parseApiErrors } from '../../utils/formErrors';
 
 const FEATURES = [
   { icon: Zap,         text: 'Opérationnel en moins de 2 minutes' },
@@ -76,7 +77,19 @@ export default function Register() {
       });
       navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur lors de l\'inscription');
+      if (err.response?.status === 409) {
+        // Email déjà utilisé → erreur directement sous le champ
+        setErrors(prev => ({ ...prev, email: err.response.data.message }));
+        toast.error(err.response.data.message);
+      } else {
+        const fieldErrors = parseApiErrors(err);
+        if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+          toast.error('Veuillez corriger les champs en erreur');
+        } else {
+          toast.error(err.response?.data?.message || 'Erreur lors de l\'inscription');
+        }
+      }
     } finally {
       setLoading(false);
     }

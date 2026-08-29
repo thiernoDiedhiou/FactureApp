@@ -7,6 +7,7 @@ import {
   Package, ChevronDown, X
 } from 'lucide-react';
 import api from '../../utils/api';
+import { handleFormError } from '../../utils/formErrors';
 import { calculateTotals } from '../../utils/formatCFA';
 import { today, addDays } from '../../utils/dateUtils';
 import { useSettings, useFormatCurrency } from '../../contexts/SettingsContext';
@@ -168,12 +169,21 @@ export default function DocumentForm() {
   const validate = () => {
     const errs = {};
     if (!form.clientId) errs.clientId = 'Client requis';
-    if (!form.issuedDate) errs.issuedDate = 'Date requise';
+    if (!form.issuedDate) errs.issuedDate = 'Date d\'émission requise';
+    if (form.dueDate && form.issuedDate && form.dueDate < form.issuedDate) {
+      errs.dueDate = 'La date d\'échéance doit être égale ou postérieure à la date d\'émission';
+    }
+    const discountVal = parseFloat(form.discount);
+    if (!isNaN(discountVal) && (discountVal < 0 || discountVal > 100)) {
+      errs.discount = 'La remise doit être comprise entre 0 et 100 %';
+    }
     if (items.length === 0) errs.items = 'Au moins une ligne requise';
     items.forEach((item, i) => {
       if (!item.description) errs[`item_${i}_desc`] = 'Description requise';
       if (!item.unitPrice || parseFloat(item.unitPrice) < 0) errs[`item_${i}_price`] = 'Prix invalide';
       if (!item.quantity || parseFloat(item.quantity) <= 0) errs[`item_${i}_qty`] = 'Quantité invalide';
+      const tva = parseFloat(String(item.tvaRate).trim());
+      if (isNaN(tva) || tva < 0 || tva > 100) errs[`item_${i}_tva`] = 'Taux TVA invalide (0–100)';
     });
     return errs;
   };
@@ -209,7 +219,7 @@ export default function DocumentForm() {
         navigate(`/app/documents/${data.data.document.id}`);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur');
+      toast.error(handleFormError(err, setErrors));
     } finally {
       setLoading(false);
     }
@@ -255,12 +265,18 @@ export default function DocumentForm() {
               <input type="date" className={`input-field ${errors.issuedDate ? 'border-red-500' : ''}`}
                 value={form.issuedDate}
                 onChange={(e) => setForm(f => ({ ...f, issuedDate: e.target.value }))} />
+              {errors.issuedDate && <p className="text-red-500 text-xs mt-1">{errors.issuedDate}</p>}
             </div>
             <div>
               <label className="label">Date d'échéance</label>
-              <input type="date" className="input-field"
+              <input type="date"
+                className={`input-field ${errors.dueDate ? 'border-red-500' : ''}`}
                 value={form.dueDate}
-                onChange={(e) => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+                onChange={(e) => {
+                  setForm(f => ({ ...f, dueDate: e.target.value }));
+                  setErrors(prev => ({ ...prev, dueDate: undefined }));
+                }} />
+              {errors.dueDate && <p className="text-red-500 text-xs mt-1">{errors.dueDate}</p>}
             </div>
           </div>
         </div>
@@ -477,6 +493,15 @@ export default function DocumentForm() {
                     </div>
                   </div>
 
+                  {/* Erreurs inline de la ligne */}
+                  {(errors[`item_${idx}_desc`] || errors[`item_${idx}_qty`] || errors[`item_${idx}_price`] || errors[`item_${idx}_tva`]) && (
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
+                      {errors[`item_${idx}_desc`] && <p className="text-red-500 text-xs">Description : {errors[`item_${idx}_desc`]}</p>}
+                      {errors[`item_${idx}_qty`] && <p className="text-red-500 text-xs">Quantité : {errors[`item_${idx}_qty`]}</p>}
+                      {errors[`item_${idx}_price`] && <p className="text-red-500 text-xs">Prix : {errors[`item_${idx}_price`]}</p>}
+                      {errors[`item_${idx}_tva`] && <p className="text-red-500 text-xs">TVA : {errors[`item_${idx}_tva`]}</p>}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -491,10 +516,14 @@ export default function DocumentForm() {
                   type="number"
                   min="0"
                   max="100"
-                  className="input-field max-w-xs"
+                  className={`input-field max-w-xs ${errors.discount ? 'border-red-500' : ''}`}
                   value={form.discount}
-                  onChange={(e) => setForm(f => ({ ...f, discount: e.target.value }))}
+                  onChange={(e) => {
+                    setForm(f => ({ ...f, discount: e.target.value }));
+                    setErrors(prev => ({ ...prev, discount: undefined }));
+                  }}
                 />
+                {errors.discount && <p className="text-red-500 text-xs mt-1">{errors.discount}</p>}
               </div>
               <div>
                 <label className="label">Notes / Conditions de paiement</label>

@@ -24,6 +24,14 @@ const documentSchema = z.object({
   discount: z.number().min(0).max(100).default(0),
   notes: z.string().optional(),
   items: z.array(itemSchema).min(1, 'Au moins une ligne est requise')
+}).refine(data => {
+  if (data.dueDate && data.issuedDate) {
+    return new Date(data.dueDate) >= new Date(data.issuedDate);
+  }
+  return true;
+}, {
+  message: 'La date d\'échéance doit être égale ou postérieure à la date d\'émission',
+  path: ['dueDate']
 });
 
 const include = {

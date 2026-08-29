@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Mail, Lock, Loader2, FileText, Send, Users, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import SEOHead from '../../components/SEOHead';
+import { parseApiErrors } from '../../utils/formErrors';
 
 const FEATURES = [
   { icon: FileText, text: 'Factures, devis et proformas en quelques clics' },
@@ -67,7 +68,13 @@ export default function Login() {
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         navigate(`/verify-email?email=${encodeURIComponent(err.response.data.data?.email || form.email)}`);
       } else {
-        toast.error(err.response?.data?.message || 'Identifiants incorrects');
+        const fieldErrors = parseApiErrors(err);
+        if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+          toast.error('Veuillez corriger les champs en erreur');
+        } else {
+          toast.error(err.response?.data?.message || 'Identifiants incorrects');
+        }
       }
     } finally {
       setLoading(false);
@@ -178,7 +185,7 @@ export default function Login() {
                     className={`input-field pl-9 ${errors.email ? 'border-red-500' : ''}`}
                     placeholder="email@exemple.sn"
                     value={form.email}
-                    onChange={(e) => { setForm(f => ({ ...f, email: e.target.value })); setErrors({}); }}
+                    onChange={(e) => { setForm(f => ({ ...f, email: e.target.value })); setErrors(prev => ({ ...prev, email: undefined })); }}
                     disabled={loading}
                   />
                 </div>
@@ -199,7 +206,7 @@ export default function Login() {
                     className={`input-field pl-9 pr-10 ${errors.password ? 'border-red-500' : ''}`}
                     placeholder="••••••••"
                     value={form.password}
-                    onChange={(e) => { setForm(f => ({ ...f, password: e.target.value })); setErrors({}); }}
+                    onChange={(e) => { setForm(f => ({ ...f, password: e.target.value })); setErrors(prev => ({ ...prev, password: undefined })); }}
                     disabled={loading}
                   />
                   <button
