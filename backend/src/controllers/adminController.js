@@ -102,8 +102,7 @@ const getStats = async (req, res) => {
     prisma.organization.count({
       where: {
         plan: { not: 'FREE' },
-        planExpiresAt: { lte: now },
-        planExpiresAt: { not: null }
+        planExpiresAt: { lte: now, not: null }
       }
     })
   ]);
@@ -372,6 +371,8 @@ const processUpgradeRequest = async (req, res) => {
   if (!upgradeReq) throw new AppError('Demande non trouvée', 404);
   if (upgradeReq.status !== 'pending') throw new AppError('Demande déjà traitée', 400);
 
+  let txStartedAt, txExpiresAt;
+
   const updated = await prisma.$transaction(async (tx) => {
     const result = await tx.upgradeRequest.update({
       where: { id },
@@ -386,16 +387,16 @@ const processUpgradeRequest = async (req, res) => {
 
     if (action === 'validate') {
       const org = upgradeReq.organization;
-      const newExpiresAt  = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
-      const newStartedAt  = new Date(); // début de cette période de facturation
+      txStartedAt = new Date();
+      txExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
 
       // Mise à jour de l'organisation avec les dates de la nouvelle période
       await tx.organization.update({
         where: { id: upgradeReq.organizationId },
         data: {
           plan:         upgradeReq.targetPlan,
-          planStartedAt: newStartedAt,
-          planExpiresAt: newExpiresAt
+          planStartedAt: txStartedAt,
+          planExpiresAt: txExpiresAt
         }
       });
 
@@ -404,8 +405,8 @@ const processUpgradeRequest = async (req, res) => {
         data: {
           organizationId:   upgradeReq.organizationId,
           plan:             upgradeReq.targetPlan,
-          startDate:        newStartedAt,
-          endDate:          newExpiresAt,
+          startDate:        txStartedAt,
+          endDate:          txExpiresAt,
           durationMonths:   upgradeReq.durationMonths,
           amount:           upgradeReq.amount,
           upgradeRequestId: upgradeReq.id
@@ -426,8 +427,6 @@ const processUpgradeRequest = async (req, res) => {
   // Facture par email lors de la validation manuelle admin — fire-and-forget
   if (action === 'validate') {
     const org = upgradeReq.organization;
-    const newStartedAt = new Date();
-    const newExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
 
     (async () => {
       try {
@@ -452,8 +451,8 @@ const processUpgradeRequest = async (req, res) => {
           durationMonths: upgradeReq.durationMonths,
           transactionRef: upgradeReq.transactionRef,
           paymentMethod:  upgradeReq.paymentMethod || 'manual',
-          startDate:      newStartedAt,
-          endDate:        newExpiresAt,
+          startDate:      txStartedAt,
+          endDate:        txExpiresAt,
           invoiceRef,
           platformName:   platformConfig?.paymentName  || 'CFActure',
           supportEmail:   platformConfig?.supportEmail || 'contact@factureapp.sn'

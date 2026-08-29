@@ -23,8 +23,10 @@ export default function DocumentForm() {
   const isEdit = Boolean(id);
   const tvaInitialized = useRef(false);
 
+  const VALID_TYPES = ['facture', 'devis', 'proforma'];
+  const typeParam = searchParams.get('type');
   const [form, setForm] = useState({
-    type: 'facture',
+    type: VALID_TYPES.includes(typeParam) ? typeParam : 'facture',
     clientId: searchParams.get('clientId') || '',
     issuedDate: today(),
     dueDate: addDays(30),
@@ -41,6 +43,7 @@ export default function DocumentForm() {
   const [showProductSearch, setShowProductSearch] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const priceRefs = useRef({});
 
   // Sync TVA par défaut au chargement des settings (nouveau document uniquement)
   useEffect(() => {
@@ -106,6 +109,37 @@ export default function DocumentForm() {
   };
 
   const totals = calculateTotals(items, parseFloat(form.discount) || 0);
+
+  const fmtPrice = (val) => {
+    const n = parseInt(val, 10);
+    if (!n) return '';
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  };
+
+  const handlePriceChange = (e, idx) => {
+    const input = e.target;
+    const cursorPos = input.selectionStart;
+    const oldVal = input.value;
+    const sepsBeforeCursor = (oldVal.slice(0, cursorPos).match(/ /g) || []).length;
+    const digitsBeforeCursor = cursorPos - sepsBeforeCursor;
+    const raw = oldVal.replace(/ /g, '').replace(/[^0-9]/g, '');
+    const num = raw === '' ? '' : Number(raw);
+    const formatted = num === '' ? '' : fmtPrice(num);
+    input.value = formatted;
+    const setCursor = () => {
+      if (!formatted) return;
+      let digitCount = 0;
+      let newPos = formatted.length;
+      for (let i = 0; i <= formatted.length; i++) {
+        if (digitCount === digitsBeforeCursor) { newPos = i; break; }
+        if (i < formatted.length && formatted[i] !== ' ') digitCount++;
+      }
+      input.setSelectionRange(newPos, newPos);
+    };
+    setCursor();
+    requestAnimationFrame(setCursor);
+    updateItem(idx, 'unitPrice', num);
+  }
 
   const addItem = () => {
     setItems(prev => [...prev, { ...EMPTY_ITEM, tvaRate: settings.defaultTvaRate ?? 18 }]);
@@ -303,7 +337,7 @@ export default function DocumentForm() {
           {errors.items && <p className="text-red-500 text-xs mb-3">{errors.items}</p>}
 
           <div className="space-y-3">
-            {/* Table header */}
+            {/* Table header — desktop only */}
             <div className="hidden md:grid grid-cols-12 gap-2 text-xs font-medium text-gray-500 uppercase px-2">
               <div className="col-span-5">Description</div>
               <div className="col-span-1 text-center">Qté</div>
@@ -318,85 +352,122 @@ export default function DocumentForm() {
               const tvaAmt = ht * ((parseFloat(item.tvaRate) || 0) / 100);
               const lineTotal = Math.round((ht + tvaAmt) * (1 - (parseFloat(form.discount) || 0) / 100));
 
+              const descriptionInput = (
+                <div className="relative">
+                  <input
+                    type="text"
+                    className={`input-field text-sm ${errors[`item_${idx}_desc`] ? 'border-red-400' : ''}`}
+                    placeholder="Description du service..."
+                    value={item.description}
+                    onChange={(e) => updateItem(idx, 'description', e.target.value)}
+                    onFocus={() => setShowProductSearch(idx)}
+                  />
+                  {showProductSearch === idx && products.length > 0 && (
+                    <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      {products.filter(p =>
+                        p.name.toLowerCase().includes(item.description.toLowerCase())
+                      ).slice(0, 6).map(p => (
+                        <button key={p.id} type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                          onMouseDown={() => selectProduct(idx, p)}>
+                          <p className="text-sm font-medium">{p.name}</p>
+                          <p className="text-xs text-gray-400">{formatAmount(p.price)} HT</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+
               return (
                 <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
-                  <div className="md:grid md:grid-cols-12 md:gap-2 md:items-center space-y-2 md:space-y-0">
+
+                  {/* ── MOBILE layout ── */}
+                  <div className="md:hidden space-y-2">
                     {/* Description */}
-                    <div className="col-span-5 relative">
-                      <input
-                        type="text"
-                        className={`input-field text-sm ${errors[`item_${idx}_desc`] ? 'border-red-400' : ''}`}
-                        placeholder="Description du service..."
-                        value={item.description}
-                        onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                        onFocus={() => setShowProductSearch(idx)}
-                      />
-                      {/* Product picker dropdown */}
-                      {showProductSearch === idx && products.length > 0 && (
-                        <div className="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                          {products.filter(p =>
-                            p.name.toLowerCase().includes(item.description.toLowerCase())
-                          ).slice(0, 6).map(p => (
-                            <button key={p.id} type="button"
-                              className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
-                              onMouseDown={() => selectProduct(idx, p)}>
-                              <p className="text-sm font-medium">{p.name}</p>
-                              <p className="text-xs text-gray-400">{formatAmount(p.price)} HT</p>
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    {descriptionInput}
+
+                    {/* Row 2 : Qté (1/3) + Prix HT (2/3) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Qté</label>
+                        <input
+                          type="number" min="1" step="1"
+                          className={`input-field text-sm text-center ${errors[`item_${idx}_qty`] ? 'border-red-400' : ''}`}
+                          value={item.quantity}
+                          onChange={(e) => updateItem(idx, 'quantity', e.target.value)}
+                          placeholder="1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-xs text-gray-500 mb-1 block">Prix HT (FCFA)</label>
+                        <input
+                          ref={el => priceRefs.current[idx] = el}
+                          type="text"
+                          inputMode="numeric"
+                          className={`input-field text-sm text-right ${errors[`item_${idx}_price`] ? 'border-red-400' : ''}`}
+                          value={fmtPrice(item.unitPrice)}
+                          onChange={(e) => handlePriceChange(e, idx)}
+                          placeholder="0"
+                        />
+                      </div>
                     </div>
 
-                    {/* Quantity */}
+                    {/* Row 3 : TVA % (1/3) + Total TTC + Supprimer (2/3) */}
+                    <div className="grid grid-cols-3 gap-2 items-end">
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">TVA %</label>
+                        <input
+                          type="number" min="0" max="100"
+                          className="input-field text-sm text-center"
+                          value={item.tvaRate}
+                          onChange={(e) => updateItem(idx, 'tvaRate', e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-2 flex items-end justify-between pb-0.5">
+                        <div>
+                          <p className="text-xs text-gray-500">Total TTC</p>
+                          <p className="text-sm font-semibold text-gray-900">{formatAmount(lineTotal)}</p>
+                        </div>
+                        <button type="button" onClick={() => removeItem(idx)}
+                          disabled={items.length === 1}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded disabled:opacity-30">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── DESKTOP layout ── */}
+                  <div className="hidden md:grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-5">{descriptionInput}</div>
                     <div className="col-span-1">
-                      <label className="text-xs text-gray-500 mb-1 block md:hidden">Quantité</label>
-                      <input
-                        type="number"
-                        min="1"
-                        step="1"
+                      <input type="number" min="1" step="1"
                         className={`input-field text-sm text-center ${errors[`item_${idx}_qty`] ? 'border-red-400' : ''}`}
                         value={item.quantity}
                         onChange={(e) => updateItem(idx, 'quantity', e.target.value)}
-                        placeholder="1"
-                      />
+                        placeholder="1" />
                     </div>
-
-                    {/* Unit price */}
                     <div className="col-span-2">
-                      <label className="text-xs text-gray-500 mb-1 block md:hidden">Prix HT (FCFA)</label>
                       <input
-                        type="number"
-                        min="0"
+                        ref={el => priceRefs.current[idx] = el}
+                        type="text"
+                        inputMode="numeric"
                         className={`input-field text-sm text-right ${errors[`item_${idx}_price`] ? 'border-red-400' : ''}`}
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(idx, 'unitPrice', e.target.value)}
+                        value={fmtPrice(item.unitPrice)}
+                        onChange={(e) => handlePriceChange(e, idx)}
                         placeholder="0"
                       />
                     </div>
-
-                    {/* TVA rate */}
                     <div className="col-span-1">
-                      <label className="text-xs text-gray-500 mb-1 block md:hidden">TVA %</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
+                      <input type="number" min="0" max="100"
                         className="input-field text-sm text-center"
                         value={item.tvaRate}
-                        onChange={(e) => updateItem(idx, 'tvaRate', e.target.value)}
-                      />
+                        onChange={(e) => updateItem(idx, 'tvaRate', e.target.value)} />
                     </div>
-
-                    {/* Line total */}
                     <div className="col-span-2 text-right">
-                      <span className="text-xs text-gray-500 mb-1 block md:hidden">Total TTC</span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        {formatAmount(lineTotal)}
-                      </span>
+                      <span className="text-sm font-semibold text-gray-900">{formatAmount(lineTotal)}</span>
                     </div>
-
-                    {/* Remove */}
                     <div className="col-span-1 flex justify-end">
                       <button type="button" onClick={() => removeItem(idx)}
                         disabled={items.length === 1}
@@ -405,6 +476,7 @@ export default function DocumentForm() {
                       </button>
                     </div>
                   </div>
+
                 </div>
               );
             })}

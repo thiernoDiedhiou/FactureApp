@@ -6,6 +6,21 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 
+const timeAgo = (date) => {
+  const s = Math.floor((Date.now() - new Date(date)) / 1000);
+  if (s < 60)   return 'à l\'instant';
+  const m = Math.floor(s / 60);
+  if (m < 60)   return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24)   return `il y a ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 30)   return `il y a ${d} jour${d > 1 ? 's' : ''}`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12)  return `il y a ${mo} mois`;
+  const y = Math.floor(mo / 12);
+  return `il y a ${y} an${y > 1 ? 's' : ''}`;
+};
+
 const PLAN_COLORS = {
   FREE: 'bg-gray-100 text-gray-500',
   STARTER: 'bg-blue-100 text-blue-600',
@@ -151,33 +166,38 @@ export default function AdminUsers() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-4 hidden lg:table-cell text-xs text-gray-400">
-                      {new Date(u.createdAt).toLocaleDateString('fr-FR')}
+                    <td className="px-4 py-4 hidden lg:table-cell">
+                      <span
+                        className="text-xs text-gray-500 cursor-default"
+                        title={new Date(u.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      >
+                        {timeAgo(u.createdAt)}
+                      </span>
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <div className="flex items-center gap-1 justify-end">
+                      <div className="flex items-center gap-2 justify-end">
                         <Link
                           to={`/admin/users/${u.id}/detail`}
-                          title="Voir le détail"
-                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-3.5 h-3.5" /> Voir
                         </Link>
                         {!isMe && (
                           <button
                             onClick={() => handleToggleSuperAdmin(u)}
                             disabled={!!actionLoading}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            title={u.isSuperAdmin ? 'Révoquer les droits Super Admin' : 'Promouvoir en Super Admin'}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
                               u.isSuperAdmin
-                                ? 'text-red-600 hover:bg-red-50'
-                                : 'text-amber-600 hover:bg-amber-50'
+                                ? 'text-red-600 hover:bg-red-50 border border-red-200'
+                                : 'text-amber-700 hover:bg-amber-50 border border-amber-200'
                             }`}
                           >
                             {actionLoading === u.id
                               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               : <ShieldCheck className="w-3.5 h-3.5" />
                             }
-                            {u.isSuperAdmin ? 'Révoquer' : 'Promouvoir'}
+                            {u.isSuperAdmin ? 'Révoquer' : '→ Super Admin'}
                           </button>
                         )}
                       </div>

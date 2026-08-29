@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import BottomNav from './BottomNav';
+import OfflineBanner from './OfflineBanner';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertTriangle, XCircle, Zap, X } from 'lucide-react';
 
@@ -83,6 +84,7 @@ export default function Layout() {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <OfflineBanner />
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <SubscriptionBanner organization={organization} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">

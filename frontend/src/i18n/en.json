@@ -2,12 +2,14 @@
   "nav": {
     "dashboard": "Dashboard",
     "clients": "Clients",
-    "products": "Products & Services",
+    "products": "Products",
     "documents": "Documents",
     "settings": "Settings",
-    "organization": "Organization",
-    "plans": "Plans & Pricing",
-    "logout": "Logout"
+    "organization": "Team",
+    "plans": "My subscription",
+    "logout": "Logout",
+    "section_main": "Navigation",
+    "section_account": "Account"
   },
   "auth": {
     "login": "Login",
@@ -58,7 +60,7 @@
     "deleted": "Client deleted"
   },
   "products": {
-    "title": "Products & Services",
+    "title": "Products",
     "new": "New product",
     "edit": "Edit product",
     "name": "Product/Service name",

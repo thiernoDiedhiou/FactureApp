@@ -1,0 +1,20 @@
+{
+  "name": "FactureApp",
+  "short_name": "FactureApp",
+  "description": "Logiciel de facturation en ligne pour PME et freelances de la zone UEMOA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00C8D7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"],
+  "lang": "fr"
+}

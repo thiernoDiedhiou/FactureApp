@@ -119,8 +119,11 @@ const importCSV = async (req, res) => {
   if (!req.file) throw new AppError('Fichier CSV requis', 400);
 
   const { parse } = require('csv-parse/sync');
-  const records = parse(req.file.buffer.toString('utf-8'), {
-    columns: true, skip_empty_lines: true, trim: true
+  const content = req.file.buffer.toString('utf-8').replace(/^﻿/, ''); // retire le BOM UTF-8
+  const firstLine = content.split('\n')[0] || '';
+  const delimiter = firstLine.includes(';') ? ';' : ','; // Excel FR utilise ; par défaut
+  const records = parse(content, {
+    columns: true, skip_empty_lines: true, trim: true, delimiter
   });
 
   const imported = [];

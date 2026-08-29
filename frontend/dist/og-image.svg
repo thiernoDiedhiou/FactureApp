@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00C8D7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#007a87;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1100" cy="80" r="200" fill="white" fill-opacity="0.07"/>
+  <circle cx="100" cy="550" r="180" fill="white" fill-opacity="0.07"/>
+
+  <!-- Logo icon -->
+  <g transform="translate(100, 200)">
+    <rect width="90" height="90" rx="18" fill="white" fill-opacity="0.2"/>
+    <polyline points="10,30 20,40 35,22" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="42" y1="26" x2="77" y2="26" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="42" y1="37" x2="65" y2="37" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="10" y1="52" x2="77" y2="52" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <line x1="10" y1="63" x2="62" y2="63" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- App name -->
+  <text x="210" y="265" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="white">FactureApp</text>
+
+  <!-- Tagline -->
+  <text x="100" y="330" font-family="Arial, sans-serif" font-size="32" fill="white" fill-opacity="0.9">Logiciel de facturation en ligne pour les PME</text>
+  <text x="100" y="378" font-family="Arial, sans-serif" font-size="32" fill="white" fill-opacity="0.9">et freelances de la zone UEMOA</text>
+
+  <!-- Features pills -->
+  <rect x="100" y="420" width="230" height="46" rx="23" fill="white" fill-opacity="0.15"/>
+  <text x="215" y="449" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle">TVA Sénégal 18%</text>
+
+  <rect x="350" y="420" width="210" height="46" rx="23" fill="white" fill-opacity="0.15"/>
+  <text x="455" y="449" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle">PDF &amp; WhatsApp</text>
+
+  <rect x="580" y="420" width="200" height="46" rx="23" fill="white" fill-opacity="0.15"/>
+  <text x="680" y="449" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle">Franc CFA (XOF)</text>
+
+  <!-- Bottom URL -->
+  <text x="100" y="570" font-family="Arial, sans-serif" font-size="24" fill="white" fill-opacity="0.65">facture.innosft.com</text>
+</svg>

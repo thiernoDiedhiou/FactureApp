@@ -4,15 +4,14 @@ const jwt = require('jsonwebtoken');
 const isDev = process.env.NODE_ENV !== 'production';
 const skipInDev = () => isDev;
 
-// Extrait l'userId du JWT sans vérification cryptographique.
-// Utilisé uniquement comme clé de rate limiting — la vraie vérification reste dans authenticate().
-// Avantage : évite que des utilisateurs différents derrière le même NAT (entreprise, cybercafé)
-// partagent leur quota et se bloquent mutuellement.
+// Extrait l'userId depuis un JWT valide pour segmenter le rate limiting par utilisateur.
+// Utilise jwt.verify() — un token forgé est ignoré et tombe sur la clé IP.
+// Avantage : évite que des utilisateurs différents derrière le même NAT partagent leur quota.
 const extractUserId = (req) => {
   try {
     const auth = req.headers.authorization;
     if (auth?.startsWith('Bearer ')) {
-      const decoded = jwt.decode(auth.slice(7));
+      const decoded = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
       if (decoded?.id) return `uid:${decoded.id}`;
     }
   } catch {}

@@ -1,6 +1,6 @@
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Plus, ChevronDown, Settings, LogOut, Building2, Check, Loader2, ShieldCheck } from 'lucide-react';
+import { Menu, ChevronDown, Settings, LogOut, Building2, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 
@@ -14,11 +14,6 @@ const breadcrumbMap = {
   '/app/plans':        'plans',
 };
 
-const quickActions = {
-  '/app/clients':   { to: '/app/clients/new',   label: 'Nouveau client' },
-  '/app/products':  { to: '/app/products/new',  label: 'Nouveau produit' },
-  '/app/documents': { to: '/app/documents/new', label: 'Nouveau document' },
-};
 
 export default function Header({ onMenuClick }) {
   const { t } = useTranslation();
@@ -33,8 +28,6 @@ export default function Header({ onMenuClick }) {
   const segments = location.pathname.split('/').filter(Boolean); // ['app', 'clients', '123']
   const path = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : `/${segments[0] || 'app'}`;
   const titleKey = breadcrumbMap[path] || 'dashboard';
-  const quickAction = quickActions[path];
-
   // Fermer le dropdown si clic en dehors
   useEffect(() => {
     function handleClickOutside(e) {
@@ -86,13 +79,6 @@ export default function Header({ onMenuClick }) {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        {quickAction && (
-          <Link to={quickAction.to} className="btn-primary hidden sm:inline-flex">
-            <Plus className="w-4 h-4" />
-            {quickAction.label}
-          </Link>
-        )}
-
         {/* User avatar + dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button

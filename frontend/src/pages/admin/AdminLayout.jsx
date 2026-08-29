@@ -2,21 +2,37 @@ import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminBottomNav from '../../components/AdminBottomNav';
+import OfflineBanner from '../../components/OfflineBanner';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
-  LogOut, ChevronRight, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2, Search, CreditCard
+  LogOut, ArrowLeft, Zap, Menu, X, TrendingUp, Settings, Loader2, Search, CreditCard
 } from 'lucide-react';
 
-const navItems = [
-  { to: '/admin',               icon: LayoutDashboard, label: 'Tableau de bord',  exact: true },
-  { to: '/admin/organizations', icon: Building2,       label: 'Organisations' },
-  { to: '/admin/users',         icon: Users,           label: 'Utilisateurs' },
-  { to: '/admin/plans',         icon: Zap,             label: 'Plans tarifaires' },
-  { to: '/admin/subscriptions', icon: CreditCard,      label: 'Abonnements' },
-  { to: '/admin/upgrades',      icon: TrendingUp,      label: 'Demandes upgrade' },
-  { to: '/admin/settings',      icon: Settings,        label: 'Paramètres' },
+const navGroups = [
+  {
+    label: 'Plateforme',
+    items: [
+      { to: '/admin',               icon: LayoutDashboard, label: 'Tableau de bord', exact: true },
+      { to: '/admin/organizations', icon: Building2,       label: 'Organisations' },
+      { to: '/admin/users',         icon: Users,           label: 'Utilisateurs' },
+    ],
+  },
+  {
+    label: 'Facturation',
+    items: [
+      { to: '/admin/plans',         icon: Zap,       label: 'Plans tarifaires' },
+      { to: '/admin/subscriptions', icon: CreditCard, label: 'Abonnements' },
+      { to: '/admin/upgrades',      icon: TrendingUp, label: 'Validations' },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { to: '/admin/settings', icon: Settings, label: 'Paramètres' },
+    ],
+  },
 ];
 
 const PAGE_TITLES = {
@@ -25,7 +41,7 @@ const PAGE_TITLES = {
   '/admin/users':          'Utilisateurs',
   '/admin/plans':          'Plans tarifaires',
   '/admin/subscriptions':  'Abonnements',
-  '/admin/upgrades':       'Demandes upgrade',
+  '/admin/upgrades':       'Validations',
   '/admin/settings':       'Paramètres',
 };
 
@@ -177,29 +193,27 @@ function Sidebar({ onClose }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label, exact }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={exact}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
+        {navGroups.map((group, gi) => (
+          <div key={group.label}>
+            {gi > 0 && <div className="border-t border-gray-800 my-3" />}
+            <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500 select-none">
+              {group.label}
+            </p>
+            {group.items.map(({ to, icon: Icon, label, exact }) => (
+              <NavLink key={to} to={to} end={exact} onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  }`
+                }>
                 <Icon className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1">{label}</span>
-                {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
-              </>
-            )}
-          </NavLink>
+                <span className="flex-1 truncate">{label}</span>
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
 
@@ -279,6 +293,7 @@ export default function AdminLayout() {
           </div>
         </header>
 
+        <OfflineBanner />
         {/* Content */}
         <main className="flex-1 overflow-auto bg-gray-50 pb-16 lg:pb-0">
           <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">

@@ -2,12 +2,14 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "clients": "Clients",
-    "products": "Produits & Services",
+    "products": "Produits",
     "documents": "Documents",
     "settings": "Paramètres",
-    "organization": "Organisation",
-    "plans": "Plans & Tarifs",
-    "logout": "Déconnexion"
+    "organization": "Équipe",
+    "plans": "Mon abonnement",
+    "logout": "Déconnexion",
+    "section_main": "Navigation",
+    "section_account": "Compte"
   },
   "auth": {
     "login": "Connexion",
@@ -58,7 +60,7 @@
     "deleted": "Client supprimé"
   },
   "products": {
-    "title": "Produits & Services",
+    "title": "Produits",
     "new": "Nouveau produit",
     "edit": "Modifier le produit",
     "name": "Nom du produit/service",

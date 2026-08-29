@@ -51,7 +51,9 @@ export default function ProductList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">{t('products.title')}</h1>
-          <p className="text-sm text-gray-500 mt-1">{products.length} produit(s)</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {products.length} produit{products.length > 1 ? 's' : ''}
+          </p>
         </div>
         <Link to="/app/products/new" className="btn-primary">
           <Plus className="w-4 h-4" /> {t('products.new')}
@@ -105,7 +107,7 @@ export default function ProductList() {
                 <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
                   <Package className="w-5 h-5 text-primary-600" />
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Link to={`/app/products/${product.id}/edit`}
                     className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-primary-600">
                     <Edit className="w-4 h-4" />

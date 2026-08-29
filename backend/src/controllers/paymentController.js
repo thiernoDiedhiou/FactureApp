@@ -242,6 +242,7 @@ const moneyFusionWebhook = async (req, res) => {
 
   const { organizationId, targetPlan, durationMonths, amount } = upgradeReq;
 
+  let newStartedAt, newExpiresAt;
   try {
     await prisma.$transaction(async (tx) => {
       // Re-vérifier le statut dans la transaction pour éviter les race conditions
@@ -251,8 +252,8 @@ const moneyFusionWebhook = async (req, res) => {
       const org = await tx.organization.findUnique({ where: { id: organizationId } });
       if (!org) throw new Error(`Organisation ${organizationId} introuvable`);
 
-      const newStartedAt = new Date();
-      const newExpiresAt = computeNewExpiry(org, targetPlan, durationMonths);
+      newStartedAt = new Date();
+      newExpiresAt = computeNewExpiry(org, targetPlan, durationMonths);
 
       await tx.organization.update({
         where: { id: organizationId },
@@ -284,7 +285,7 @@ const moneyFusionWebhook = async (req, res) => {
     notifyPlanActivation(upgradeReq, activatedOrg, newStartedAt, newExpiresAt);
   } catch (err) {
     console.error('[MF webhook] Erreur activation:', err.message);
-    return res.json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Erreur interne' });
   }
 
   res.json({ success: true, received: true });
@@ -339,37 +340,43 @@ const getPaymentStatus = async (req, res) => {
   const mfStatut = verification.data?.statut;
 
   if (mfStatut === 'paid') {
-    // Webhook manquant — activer le plan maintenant
+    // Webhook manquant — activer le plan maintenant (transaction interactive pour idempotence)
     const org = await prisma.organization.findUnique({ where: { id: upgradeReq.organizationId } });
-    const newStartedAt = new Date();
-    const newExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
+    let statusNewStartedAt, statusNewExpiresAt;
 
-    await prisma.$transaction([
-      prisma.organization.update({
+    await prisma.$transaction(async (tx) => {
+      const fresh = await tx.upgradeRequest.findUnique({ where: { id: upgradeReq.id } });
+      if (fresh.status !== 'pending') return;
+
+      statusNewStartedAt = new Date();
+      statusNewExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
+
+      await tx.organization.update({
         where: { id: upgradeReq.organizationId },
-        data:  { plan: upgradeReq.targetPlan, planStartedAt: newStartedAt, planExpiresAt: newExpiresAt }
-      }),
-      prisma.upgradeRequest.update({
+        data:  { plan: upgradeReq.targetPlan, planStartedAt: statusNewStartedAt, planExpiresAt: statusNewExpiresAt }
+      });
+      await tx.upgradeRequest.update({
         where: { id: upgradeReq.id },
         data:  { status: 'validated', processedAt: new Date(), processedBy: 'status_poll_recovery' }
-      }),
-      prisma.subscription.create({
+      });
+      await tx.subscription.create({
         data: {
           organizationId:   upgradeReq.organizationId,
           plan:             upgradeReq.targetPlan,
-          startDate:        newStartedAt,
-          endDate:          newExpiresAt,
+          startDate:        statusNewStartedAt,
+          endDate:          statusNewExpiresAt,
           durationMonths:   upgradeReq.durationMonths,
           amount:           upgradeReq.amount,
           upgradeRequestId: upgradeReq.id
         }
-      })
-    ]);
+      });
+    });
 
     console.log(`[MF status] Récupération webhook — plan activé : org=${upgradeReq.organizationId} plan=${upgradeReq.targetPlan}`);
 
-    // Facture par email — fire-and-forget
-    notifyPlanActivation(upgradeReq, org, newStartedAt, newExpiresAt);
+    if (statusNewStartedAt) {
+      notifyPlanActivation(upgradeReq, org, statusNewStartedAt, statusNewExpiresAt);
+    }
 
     return res.json({
       success: true,
@@ -425,30 +432,39 @@ const cancelPendingCheckout = async (req, res) => {
         const newStartedAt = new Date();
         const newExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
 
-        await prisma.$transaction([
-          prisma.organization.update({
+        let cancelNewStartedAt, cancelNewExpiresAt;
+
+        await prisma.$transaction(async (tx) => {
+          const fresh = await tx.upgradeRequest.findUnique({ where: { id: upgradeReq.id } });
+          if (fresh.status !== 'pending') return;
+
+          cancelNewStartedAt = newStartedAt;
+          cancelNewExpiresAt = newExpiresAt;
+
+          await tx.organization.update({
             where: { id: upgradeReq.organizationId },
-            data:  { plan: upgradeReq.targetPlan, planStartedAt: newStartedAt, planExpiresAt: newExpiresAt }
-          }),
-          prisma.upgradeRequest.update({
+            data:  { plan: upgradeReq.targetPlan, planStartedAt: cancelNewStartedAt, planExpiresAt: cancelNewExpiresAt }
+          });
+          await tx.upgradeRequest.update({
             where: { id: upgradeReq.id },
             data:  { status: 'validated', processedAt: new Date(), processedBy: 'cancel_recovery' }
-          }),
-          prisma.subscription.create({
+          });
+          await tx.subscription.create({
             data: {
               organizationId:   upgradeReq.organizationId,
               plan:             upgradeReq.targetPlan,
-              startDate:        newStartedAt,
-              endDate:          newExpiresAt,
+              startDate:        cancelNewStartedAt,
+              endDate:          cancelNewExpiresAt,
               durationMonths:   upgradeReq.durationMonths,
               amount:           upgradeReq.amount,
               upgradeRequestId: upgradeReq.id
             }
-          })
-        ]);
+          });
+        });
 
-        // Facture par email — fire-and-forget
-        notifyPlanActivation(upgradeReq, org, newStartedAt, newExpiresAt);
+        if (cancelNewStartedAt) {
+          notifyPlanActivation(upgradeReq, org, cancelNewStartedAt, cancelNewExpiresAt);
+        }
 
         return res.json({ success: true, activated: true, message: 'Paiement retrouvé — plan activé' });
       }
