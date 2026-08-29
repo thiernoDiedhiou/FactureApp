@@ -3,10 +3,53 @@ const { z } = require('zod');
 const { AppError } = require('../middlewares/errorHandler');
 const { createPayment, verifyPayment } = require('../services/moneyFusionService');
 const { computeNewExpiry, computeAmount } = require('../utils/subscriptionUtils');
+const { sendSubscriptionInvoice } = require('../services/emailService');
 
 const prisma = new PrismaClient();
 
 const PLAN_ORDER = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+
+/**
+ * Envoie la facture d'abonnement par email après activation d'un plan.
+ * Toujours fire-and-forget (ne bloque jamais la réponse HTTP).
+ */
+async function notifyPlanActivation(upgradeReq, org, newStartedAt, newExpiresAt) {
+  try {
+    const [owner, platformConfig] = await Promise.all([
+      prisma.organizationMember.findFirst({
+        where:   { organizationId: org.id, role: 'OWNER' },
+        include: { user: true }
+      }),
+      prisma.platformConfig.findFirst()
+    ]);
+
+    if (!owner?.user?.email) return; // pas d'email → on passe
+
+    const year  = new Date().getFullYear();
+    const short = upgradeReq.id.slice(0, 8).toUpperCase();
+    const invoiceRef = `ABN-${year}-${short}`;
+
+    await sendSubscriptionInvoice({
+      userEmail:     owner.user.email,
+      userName:      owner.user.name,
+      orgName:       org.name,
+      plan:          upgradeReq.targetPlan,
+      amount:        upgradeReq.amount,
+      durationMonths:upgradeReq.durationMonths,
+      transactionRef:upgradeReq.transactionRef,
+      paymentMethod: upgradeReq.paymentMethod || 'moneyfusion',
+      startDate:     newStartedAt,
+      endDate:       newExpiresAt,
+      invoiceRef,
+      platformName:  platformConfig?.paymentName  || 'CFActure',
+      supportEmail:  platformConfig?.supportEmail || 'contact@factureapp.sn'
+    });
+
+    console.log(`[Invoice] Facture envoyée à ${owner.user.email} — ${invoiceRef}`);
+  } catch (err) {
+    console.error('[Invoice] Erreur envoi facture abonnement:', err.message);
+  }
+}
 
 /**
  * POST /api/payments/moneyfusion/checkout
@@ -235,6 +278,10 @@ const moneyFusionWebhook = async (req, res) => {
     });
 
     console.log(`[MF webhook] Abonnement activé : org=${organizationId} plan=${targetPlan}`);
+
+    // Facture par email — fire-and-forget
+    const activatedOrg = await prisma.organization.findUnique({ where: { id: organizationId } });
+    notifyPlanActivation(upgradeReq, activatedOrg, newStartedAt, newExpiresAt);
   } catch (err) {
     console.error('[MF webhook] Erreur activation:', err.message);
     return res.json({ success: false, error: err.message });
@@ -320,6 +367,10 @@ const getPaymentStatus = async (req, res) => {
     ]);
 
     console.log(`[MF status] Récupération webhook — plan activé : org=${upgradeReq.organizationId} plan=${upgradeReq.targetPlan}`);
+
+    // Facture par email — fire-and-forget
+    notifyPlanActivation(upgradeReq, org, newStartedAt, newExpiresAt);
+
     return res.json({
       success: true,
       data: { status: 'validated', targetPlan: upgradeReq.targetPlan }
@@ -395,6 +446,9 @@ const cancelPendingCheckout = async (req, res) => {
             }
           })
         ]);
+
+        // Facture par email — fire-and-forget
+        notifyPlanActivation(upgradeReq, org, newStartedAt, newExpiresAt);
 
         return res.json({ success: true, activated: true, message: 'Paiement retrouvé — plan activé' });
       }

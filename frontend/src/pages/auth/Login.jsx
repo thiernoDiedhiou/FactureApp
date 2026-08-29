@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Mail, Lock, Loader2, FileText, Send, Users, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, FileText, Send, Users, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import SEOHead from '../../components/SEOHead';
 
@@ -34,6 +34,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showPw, setShowPw] = useState(false);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -194,13 +195,21 @@ export default function Login() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type="password"
-                    className={`input-field pl-9 ${errors.password ? 'border-red-500' : ''}`}
+                    type={showPw ? 'text' : 'password'}
+                    className={`input-field pl-9 pr-10 ${errors.password ? 'border-red-500' : ''}`}
                     placeholder="••••••••"
                     value={form.password}
                     onChange={(e) => { setForm(f => ({ ...f, password: e.target.value })); setErrors({}); }}
                     disabled={loading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>

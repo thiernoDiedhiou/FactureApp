@@ -238,4 +238,206 @@ L'équipe CFActure`.trim();
   });
 };
 
-module.exports = { sendDocumentEmail, sendInvitationEmail, sendVerificationEmail, sendPasswordResetEmail };
+/**
+ * Envoie la facture d'abonnement par email après activation d'un plan.
+ */
+const sendSubscriptionInvoice = async ({
+  userEmail, userName, orgName,
+  plan, amount, durationMonths,
+  transactionRef, paymentMethod,
+  startDate, endDate,
+  invoiceRef, platformName, supportEmail: supportMail
+}) => {
+  const transporter = createTransporter();
+  await transporter.verify();
+
+  const PLAN_LABELS   = { STARTER: 'Starter', PRO: 'Pro', ENTERPRISE: 'Enterprise' };
+  const METHOD_LABELS = {
+    moneyfusion:  'Money Fusion',
+    wave:         'Wave',
+    orange_money: 'Orange Money',
+    cash:         'Espèces / Virement',
+    mixx:         'Mixx by Joni Joni'
+  };
+
+  const fmt = (n) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const fmtDate = (d) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const planLabel    = PLAN_LABELS[plan]    || plan;
+  const methodLabel  = METHOD_LABELS[paymentMethod] || paymentMethod;
+  const paidAmount   = fmt(amount);
+  const brandColor   = '#00C8D7';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Facture ${invoiceRef}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px;">
+<tr><td>
+<table width="600" align="center" cellpadding="0" cellspacing="0"
+       style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.09);">
+
+  <!-- ── En-tête ───────────────────────────────────── -->
+  <tr>
+    <td style="background-color:${brandColor};padding:24px 28px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="color:#ffffff;vertical-align:top;">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">${platformName || 'CFActure'}</div>
+            <div style="font-size:11px;opacity:0.85;margin-top:3px;">Facturation XOF — UEMOA</div>
+          </td>
+          <td style="text-align:right;color:#ffffff;vertical-align:top;">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Facture</div>
+            <div style="font-size:13px;font-weight:600;margin-top:3px;">${invoiceRef}</div>
+            <div style="font-size:11px;opacity:0.85;margin-top:3px;">${fmtDate(startDate)}</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── Méta : client + détails ───────────────────── -->
+  <tr>
+    <td style="padding:22px 28px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <!-- Facturé à -->
+          <td width="48%" style="vertical-align:top;">
+            <div style="border:1px solid #e2e8f0;border-radius:7px;padding:13px 15px;">
+              <div style="font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.6px;margin-bottom:7px;font-weight:700;">Facturé à</div>
+              <div style="font-weight:700;font-size:14px;color:#111;">${orgName}</div>
+              <div style="color:#475569;margin-top:3px;font-size:12px;">${userName}</div>
+              <div style="color:#94a3b8;font-size:11px;margin-top:2px;">${userEmail}</div>
+            </div>
+          </td>
+          <td width="4%"></td>
+          <!-- Détails -->
+          <td width="48%" style="vertical-align:top;">
+            <div style="border:1px solid #e2e8f0;border-radius:7px;padding:13px 15px;">
+              <div style="font-size:9px;text-transform:uppercase;color:#64748b;letter-spacing:0.6px;margin-bottom:7px;font-weight:700;">Détails</div>
+              <div style="font-size:12px;color:#374151;line-height:1.8;">
+                <div><strong>Période :</strong> ${durationMonths} mois</div>
+                <div><strong>Début :</strong> ${fmtDate(startDate)}</div>
+                <div><strong>Expire le :</strong> ${fmtDate(endDate)}</div>
+                ${transactionRef ? `<div style="font-size:10px;color:#94a3b8;margin-top:4px;"><strong>Réf. :</strong> ${transactionRef.slice(0, 20)}…</div>` : ''}
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── Tableau des lignes ─────────────────────────── -->
+  <tr>
+    <td style="padding:20px 28px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <thead>
+          <tr style="background-color:#f8fafc;">
+            <th style="padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;letter-spacing:0.4px;">Description</th>
+            <th style="padding:9px 12px;text-align:center;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;letter-spacing:0.4px;">Durée</th>
+            <th style="padding:9px 12px;text-align:right;font-size:10px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0;letter-spacing:0.4px;">Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:14px 12px;border-bottom:1px solid #f1f5f9;">
+              <div style="font-weight:700;font-size:14px;color:#111;">Abonnement Plan ${planLabel}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:3px;">CFActure · Facturation XOF</div>
+            </td>
+            <td style="padding:14px 12px;text-align:center;color:#475569;border-bottom:1px solid #f1f5f9;">${durationMonths} mois</td>
+            <td style="padding:14px 12px;text-align:right;font-weight:700;font-size:14px;border-bottom:1px solid #f1f5f9;">${paidAmount}&nbsp;FCFA</td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── Totaux ─────────────────────────────────────── -->
+  <tr>
+    <td style="padding:14px 28px 0;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="55%"></td>
+          <td width="45%">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td colspan="2" style="border-top:1px solid #e2e8f0;padding:0 0 4px;"></td>
+              </tr>
+              <tr>
+                <td style="padding:8px 10px;font-size:15px;font-weight:800;color:${brandColor};">TOTAL TTC</td>
+                <td style="padding:8px 10px;text-align:right;font-size:15px;font-weight:800;color:${brandColor};">${paidAmount}&nbsp;FCFA</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── Confirmation paiement ─────────────────────── -->
+  <tr>
+    <td style="padding:18px 28px 0;">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;">
+        <div style="font-size:13px;color:#15803d;font-weight:600;">
+          ✅&nbsp; Paiement confirmé via <strong>${methodLabel}</strong>
+        </div>
+        <div style="font-size:11px;color:#166534;margin-top:3px;">
+          Votre abonnement ${planLabel} est actif jusqu'au ${fmtDate(endDate)}.
+        </div>
+      </div>
+    </td>
+  </tr>
+
+  <!-- ── Pied de page ───────────────────────────────── -->
+  <tr>
+    <td style="padding:28px 28px 24px;">
+      <div style="border-top:1px solid #e2e8f0;padding-top:16px;text-align:center;color:#94a3b8;font-size:11px;line-height:1.8;">
+        <div style="font-weight:600;color:#64748b;">${platformName || 'CFActure'}</div>
+        <div>${supportMail || ''}</div>
+        <div style="margin-top:6px;font-size:10px;">
+          Cette facture est générée automatiquement et constitue une preuve de paiement.
+        </div>
+      </div>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  const text = `Facture ${invoiceRef}
+
+Bonjour ${userName},
+
+Merci pour votre abonnement au Plan ${planLabel} sur ${platformName || 'CFActure'}.
+
+Organisation : ${orgName}
+Plan         : ${planLabel}
+Durée        : ${durationMonths} mois
+Période      : ${fmtDate(startDate)} → ${fmtDate(endDate)}
+Montant payé : ${paidAmount} FCFA
+Mode de paiement : ${methodLabel}
+${transactionRef ? `Référence   : ${transactionRef}` : ''}
+
+Votre abonnement est maintenant actif.
+
+${platformName || 'CFActure'} — ${supportMail || ''}`;
+
+  await transporter.sendMail({
+    from:    process.env.EMAIL_FROM || process.env.SMTP_USER,
+    to:      userEmail,
+    subject: `Facture ${invoiceRef} — Abonnement Plan ${planLabel} activé`,
+    text,
+    html
+  });
+};
+
+module.exports = { sendDocumentEmail, sendInvitationEmail, sendVerificationEmail, sendPasswordResetEmail, sendSubscriptionInvoice };

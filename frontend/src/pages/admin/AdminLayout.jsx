@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import AdminBottomNav from '../../components/AdminBottomNav';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import {
@@ -279,11 +280,12 @@ export default function AdminLayout() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto bg-gray-50">
+        <main className="flex-1 overflow-auto bg-gray-50 pb-16 lg:pb-0">
           <div className="max-w-6xl mx-auto p-4 md:p-6 lg:p-8">
             <Outlet />
           </div>
         </main>
+        <AdminBottomNav onMenuClick={() => setSidebarOpen(true)} />
       </div>
     </div>
   );

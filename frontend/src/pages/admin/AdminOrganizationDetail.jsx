@@ -106,6 +106,12 @@ export default function AdminOrganizationDetail() {
   };
 
   const handlePlanChange = async (plan) => {
+    const ok = await confirm({
+      title:        'Changer le plan',
+      message:      `Passer "${org.name}" de ${org.plan} vers ${plan} ? Cette action prend effet immédiatement sans paiement.`,
+      confirmLabel: `Passer en ${plan}`
+    });
+    if (!ok) return;
     setActionLoading('plan');
     try {
       const { data } = await api.patch(`/admin/organizations/${id}/plan`, { plan });

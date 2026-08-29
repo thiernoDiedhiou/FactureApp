@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Check, Zap, Loader2, X, Clock, AlertCircle, CalendarDays, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, Zap, Loader2, X, Clock, AlertCircle, CalendarDays, RefreshCw, Phone, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
@@ -8,30 +9,39 @@ const DURATION_OPTIONS = [
   { months: 1,  label: '1 mois', discount: 0 },
   { months: 3,  label: '3 mois', discount: 5 },
   { months: 6,  label: '6 mois', discount: 10 },
-  { months: 12, label: '1 an',   discount: 20 }
+  { months: 12, label: '1 an',   discount: 20 },
 ];
 
-function computeTotal(monthlyPrice, months, discount) {
-  return Math.round(monthlyPrice * months * (1 - discount / 100));
+function computeTotal(price, months, discount) {
+  return Math.round(price * months * (1 - discount / 100));
 }
 
+const PLAN_ORDER = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
+
 const PLAN_STYLES = {
-  FREE:       { badge: 'bg-gray-100 text-gray-700',     btn: 'btn-secondary justify-center',                                                                                                               border: 'border-gray-200',  popular: false },
-  STARTER:    { badge: 'bg-blue-100 text-blue-700',     btn: 'bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors justify-center',   border: 'border-blue-400',  popular: false },
-  PRO:        { badge: 'bg-purple-100 text-purple-700', btn: 'btn-primary justify-center',                                                                                                                border: 'border-primary-500 ring-2 ring-primary-400 ring-offset-2', popular: true },
-  ENTERPRISE: { badge: 'bg-amber-100 text-amber-700',   btn: 'bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition-colors justify-center', border: 'border-amber-400',  popular: false }
+  FREE:       { badge: 'bg-gray-100 text-gray-700',     border: 'border-gray-200',  popular: false },
+  STARTER:    { badge: 'bg-blue-100 text-blue-700',     border: 'border-blue-300',  popular: false },
+  PRO:        { badge: 'bg-purple-100 text-purple-700', border: 'border-primary-500 ring-2 ring-primary-400 ring-offset-2', popular: true },
+  ENTERPRISE: { badge: 'bg-amber-100 text-amber-700',   border: 'border-amber-300', popular: false },
 };
 
+// ── Modal paiement (bottom sheet mobile, modal centré desktop) ────────────────
 function PaymentModal({ plan, isRenewal, onClose }) {
-  const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
-  const [phone, setPhone]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [duration, setDuration] = useState(DURATION_OPTIONS[0]);
+  const [phone, setPhone]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const phoneRef = useRef(null);
 
-  const totalAmount = computeTotal(plan.price, selectedDuration.months, selectedDuration.discount);
+  const total = computeTotal(plan.price, duration.months, duration.discount);
+
+  // Bloquer le scroll du body quand le modal est ouvert
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
 
   const handlePay = async () => {
-    const cleaned = phone.replace(/[\s\-]/g, '');
+    const cleaned = phone.replace(/[\s\-()]/g, '');
     if (cleaned.length < 8) {
       toast.error('Entrez votre numéro Wave, Orange Money ou Free Money');
       phoneRef.current?.focus();
@@ -41,8 +51,8 @@ function PaymentModal({ plan, isRenewal, onClose }) {
     try {
       const { data } = await api.post('/payments/moneyfusion/checkout', {
         targetPlan:     plan.key,
-        durationMonths: selectedDuration.months,
-        phone:          cleaned
+        durationMonths: duration.months,
+        phone:          cleaned,
       });
       window.location.href = data.data.checkoutUrl;
     } catch (err) {
@@ -52,92 +62,138 @@ function PaymentModal({ plan, isRenewal, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+      onClick={onClose}
+    >
+      {/* Bottom sheet mobile / modal centré desktop */}
+      <div
+        className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Poignée mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
             <h2 className="font-bold text-gray-900 text-lg">
-              {isRenewal ? 'Renouveler' : 'Passer au plan'}{' '}
-              <span className={`px-2 py-0.5 rounded-full text-sm ${PLAN_STYLES[plan.key]?.badge}`}>{plan.key}</span>
+              {isRenewal ? 'Renouveler le plan' : 'Passer au plan'}{' '}
+              <span className={`px-2.5 py-0.5 rounded-full text-sm font-semibold ${PLAN_STYLES[plan.key]?.badge}`}>
+                {plan.key.charAt(0) + plan.key.slice(1).toLowerCase()}
+              </span>
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-gray-400 mt-0.5">
               {plan.price.toLocaleString('fr-FR')} FCFA / mois
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
         <div className="p-5 space-y-5">
 
-          {/* Durée */}
+          {/* Sélecteur durée — pills compactes */}
           <div>
-            <p className="text-sm text-gray-600 font-medium mb-3">Durée d'abonnement :</p>
-            <div className="space-y-2">
+            <p className="text-sm font-semibold text-gray-700 mb-3">Durée</p>
+            <div className="grid grid-cols-2 gap-2">
               {DURATION_OPTIONS.map(opt => {
-                const total = computeTotal(plan.price, opt.months, opt.discount);
-                const isSelected = selectedDuration.months === opt.months;
+                const t = computeTotal(plan.price, opt.months, opt.discount);
+                const isSel = duration.months === opt.months;
                 return (
                   <button
                     key={opt.months}
-                    onClick={() => setSelectedDuration(opt)}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border-2 transition-all text-left ${
-                      isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    onClick={() => setDuration(opt)}
+                    className={`relative p-3 rounded-xl border-2 text-left transition-all ${
+                      isSel
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-primary-500' : 'border-gray-300'}`}>
-                        {isSelected && <div className="w-2 h-2 rounded-full bg-primary-500" />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm text-gray-900">{opt.label}</p>
-                        {opt.discount > 0 && <p className="text-xs text-green-600 font-medium">-{opt.discount}% de remise</p>}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900 text-sm">{total.toLocaleString('fr-FR')} FCFA</p>
-                      {opt.discount > 0 && (
-                        <p className="text-xs text-gray-400 line-through">{(plan.price * opt.months).toLocaleString('fr-FR')} FCFA</p>
-                      )}
-                    </div>
+                    {opt.discount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        -{opt.discount}%
+                      </span>
+                    )}
+                    <p className={`text-sm font-bold ${isSel ? 'text-primary-700' : 'text-gray-800'}`}>
+                      {opt.label}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {t.toLocaleString('fr-FR')} FCFA
+                    </p>
+                    {opt.discount > 0 && (
+                      <p className="text-[10px] text-gray-400 line-through">
+                        {(plan.price * opt.months).toLocaleString('fr-FR')} FCFA
+                      </p>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Paiement Money Fusion */}
-          <div className="rounded-xl bg-gradient-to-r from-[#00C8D7] to-[#007a87] p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-white text-xl">{totalAmount.toLocaleString('fr-FR')} FCFA</p>
-              <p className="text-white/70 text-xs text-right leading-relaxed">
-                Wave · Orange Money<br />Free Money · Expresso
+          {/* Zone paiement */}
+          <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#00C8D7] to-[#006b77]">
+            <div className="px-5 pt-4 pb-3">
+              <p className="text-white/70 text-xs font-medium uppercase tracking-wide mb-1">Total à payer</p>
+              <p className="text-3xl font-bold text-white">
+                {total.toLocaleString('fr-FR')} <span className="text-lg font-semibold text-white/80">FCFA</span>
               </p>
+              {duration.discount > 0 && (
+                <p className="text-white/60 text-xs mt-0.5">
+                  Économie de {(plan.price * duration.months - total).toLocaleString('fr-FR')} FCFA
+                </p>
+              )}
             </div>
-            <div className="flex gap-2">
-              <input
-                ref={phoneRef}
-                type="tel"
-                className="flex-1 bg-white/20 text-white placeholder-white/60 rounded-lg px-3 py-2.5 text-sm border border-white/30 focus:outline-none focus:border-white"
-                placeholder="7X XXX XX XX"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handlePay()}
-              />
+
+            <div className="bg-black/10 px-5 py-4 space-y-3">
+              {/* Champ téléphone */}
+              <div>
+                <label className="text-white/80 text-xs font-medium block mb-1.5">
+                  Numéro Wave / Orange Money / Free Money
+                </label>
+                <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2.5">
+                  <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <input
+                    ref={phoneRef}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    className="flex-1 text-gray-900 text-base font-medium placeholder-gray-300 bg-transparent focus:outline-none"
+                    placeholder="7X XXX XX XX"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handlePay()}
+                  />
+                </div>
+              </div>
+
+              {/* Bouton payer */}
               <button
                 onClick={handlePay}
-                disabled={loading || phone.replace(/[\s\-]/g, '').length < 8}
-                className="bg-white text-primary-700 font-bold px-5 py-2.5 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50 transition-colors flex items-center gap-2 flex-shrink-0"
+                disabled={loading || phone.replace(/[\s\-()]/g, '').length < 8}
+                className="w-full bg-white text-primary-700 font-bold py-3.5 rounded-xl text-base disabled:opacity-50 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4" /> Payer</>}
+                {loading
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <><Zap className="w-5 h-5" /> Payer {total.toLocaleString('fr-FR')} FCFA</>
+                }
               </button>
             </div>
-            <p className="text-white/60 text-xs text-center">
-              Activation immédiate — paiement sécurisé via Money Fusion
-            </p>
+          </div>
+
+          {/* Badges de confiance */}
+          <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-green-500" /> Paiement sécurisé
+            </span>
+            <span className="flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-primary-500" /> Activation immédiate
+            </span>
           </div>
 
         </div>
@@ -146,6 +202,7 @@ function PaymentModal({ plan, isRenewal, onClose }) {
   );
 }
 
+// ── Page Plans ────────────────────────────────────────────────────────────────
 export default function Plans() {
   const { organization } = useAuth();
   const [plans, setPlans]               = useState([]);
@@ -159,23 +216,21 @@ export default function Plans() {
   const planExpiresAt = organization?.planExpiresAt || null;
 
   const daysRemaining = planExpiresAt
-    ? Math.ceil((new Date(planExpiresAt) - new Date()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(planExpiresAt) - Date.now()) / 86_400_000)
     : null;
 
-  const subscriptionStatus = !planExpiresAt || currentPlan === 'FREE'
-    ? 'free'
-    : daysRemaining <= 0
-      ? 'expired'
-      : daysRemaining <= 7
-        ? 'expiring_soon'
-        : 'active';
+  const subscriptionStatus =
+    !planExpiresAt || currentPlan === 'FREE' ? 'free'
+    : daysRemaining <= 0                      ? 'expired'
+    : daysRemaining <= 7                      ? 'expiring_soon'
+    : 'active';
 
   useEffect(() => {
-    const fetchPlans  = api.get('/plans').then(r => r.data.data.plans).catch(() => []);
-    const fetchConfig = api.get('/plans/payment-config').then(r => r.data.data.config).catch(() => null);
-    const fetchMine   = api.get('/upgrades/mine').then(r => r.data.data.requests).catch(() => []);
-
-    Promise.all([fetchPlans, fetchConfig, fetchMine]).then(([p, c, r]) => {
+    Promise.all([
+      api.get('/plans').then(r => r.data.data.plans).catch(() => []),
+      api.get('/plans/payment-config').then(r => r.data.data.config).catch(() => null),
+      api.get('/upgrades/mine').then(r => r.data.data.requests).catch(() => []),
+    ]).then(([p, c, r]) => {
       setPlans(p);
       setPaymentConfig(c);
       setPendingRequest(r.find(req => req.status === 'pending') || null);
@@ -189,28 +244,28 @@ export default function Plans() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in">
-      <div className="text-center mb-10">
-        <h1 className="page-title">Choisissez votre plan</h1>
-        <p className="text-gray-500 mt-2">
-          Passez au plan supérieur pour débloquer plus d'utilisateurs et de fonctionnalités.
+    <div className="max-w-5xl mx-auto animate-fade-in space-y-6">
+
+      {/* En-tête */}
+      <div className="text-center">
+        <h1 className="page-title">Plans &amp; Tarifs</h1>
+        <p className="text-gray-500 mt-1 text-sm sm:text-base">
+          Sans engagement · Activation immédiate · Paiement mobile
         </p>
       </div>
 
-      {/* Bannière expiration imminente ou dépassée */}
+      {/* Bannière expiration */}
       {(subscriptionStatus === 'expiring_soon' || subscriptionStatus === 'expired') && !pendingRequest && (
-        <div className={`mb-6 flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+        <div className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm ${
           subscriptionStatus === 'expired'
             ? 'bg-red-50 border border-red-300 text-red-800'
             : 'bg-orange-50 border border-orange-300 text-orange-800'
         }`}>
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <span className="flex-1">
             {subscriptionStatus === 'expired'
-              ? <><strong>Abonnement expiré</strong> — Votre plan {currentPlan} a expiré le{' '}
-                  {new Date(planExpiresAt).toLocaleDateString('fr-FR')}. Renouvelez pour continuer à bénéficier de toutes les fonctionnalités.</>
-              : <><strong>Expire bientôt</strong> — Votre plan {currentPlan} expire dans{' '}
-                  <strong>{daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</strong> ({new Date(planExpiresAt).toLocaleDateString('fr-FR')}).</>
+              ? <><strong>Abonnement expiré</strong> — Votre plan {currentPlan} a expiré. Renouvelez pour continuer.</>
+              : <><strong>Expire dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</strong> — Renouvelez maintenant pour ne pas perdre l'accès.</>
             }
           </span>
         </div>
@@ -218,52 +273,57 @@ export default function Plans() {
 
       {/* Bannière paiement en cours */}
       {pendingRequest && (
-        <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800">
           <Clock className="w-5 h-5 flex-shrink-0 text-amber-500" />
           <span className="flex-1">
-            <strong>Paiement en cours</strong> — Votre paiement pour le plan{' '}
-            <strong>{pendingRequest.targetPlan}</strong> est en attente de confirmation.{' '}
-            <a href={`/payment/return?ref=${pendingRequest.id}`} className="underline text-amber-900 hover:text-amber-700">
-              Vérifier le statut →
-            </a>
+            <strong>Paiement en cours</strong> — Plan <strong>{pendingRequest.targetPlan}</strong> en attente de confirmation.{' '}
           </span>
+          <Link
+            to={`/payment/return?ref=${pendingRequest.id}`}
+            className="underline text-amber-900 hover:text-amber-700 whitespace-nowrap text-xs font-semibold"
+          >
+            Vérifier →
+          </Link>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {plans.map((plan) => {
-          const style = PLAN_STYLES[plan.key] || PLAN_STYLES.FREE;
-          const isCurrent   = plan.key === currentPlan;
-          const features    = Array.isArray(plan.features) ? plan.features : [];
+      {/* Grille de plans */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {plans.map(plan => {
+          const style      = PLAN_STYLES[plan.key] || PLAN_STYLES.FREE;
+          const isCurrent  = plan.key === currentPlan;
+          const isUpgrade  = PLAN_ORDER.indexOf(plan.key) > PLAN_ORDER.indexOf(currentPlan);
           const isEnterprise = plan.key === 'ENTERPRISE';
-          const PLAN_ORDER   = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'];
-          const isUpgrade    = PLAN_ORDER.indexOf(plan.key) > PLAN_ORDER.indexOf(currentPlan);
-          const canRenew     = isCurrent && currentPlan !== 'FREE' && plan.price > 0;
+          const canRenew   = isCurrent && currentPlan !== 'FREE' && plan.price > 0;
+          const features   = Array.isArray(plan.features) ? plan.features : [];
 
           return (
             <div
               key={plan.key}
-              className={`relative card p-6 flex flex-col border-2 transition-all ${style.border} ${style.popular ? 'shadow-xl' : ''}`}
+              className={`relative card p-5 flex flex-col border-2 transition-all ${style.border} ${
+                style.popular ? 'shadow-xl' : ''
+              }`}
             >
               {style.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                   <span className="bg-primary-600 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
                     Populaire
                   </span>
                 </div>
               )}
 
-              <div className="mb-5">
+              {/* Infos plan */}
+              <div className="mb-4">
                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold mb-3 ${style.badge}`}>
                   {plan.key}
                 </span>
                 <div className="mb-1">
-                  {isEnterprise && plan.price === 0 ? (
-                    <span className="text-2xl font-bold text-gray-900">Sur devis</span>
-                  ) : plan.price === 0 ? (
-                    <span className="text-2xl font-bold text-gray-900">Gratuit</span>
+                  {plan.price === 0 ? (
+                    <span className="text-2xl font-bold text-gray-900">
+                      {isEnterprise ? 'Sur devis' : 'Gratuit'}
+                    </span>
                   ) : (
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex items-baseline gap-1 flex-wrap">
                       <span className="text-2xl font-bold text-gray-900">
                         {plan.price.toLocaleString('fr-FR')}
                       </span>
@@ -271,7 +331,7 @@ export default function Plans() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">{plan.description}</p>
+                <p className="text-xs text-gray-500 leading-snug">{plan.description}</p>
                 <p className="text-xs text-gray-400 mt-1">
                   {plan.maxMembers === -1
                     ? 'Utilisateurs illimités'
@@ -279,7 +339,8 @@ export default function Plans() {
                 </p>
               </div>
 
-              <ul className="space-y-2 flex-1 mb-6">
+              {/* Features */}
+              <ul className="space-y-2 flex-1 mb-5">
                 {features.map((feat, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                     <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -288,30 +349,29 @@ export default function Plans() {
                 ))}
               </ul>
 
+              {/* CTA */}
               {isCurrent ? (
                 <div className="space-y-2">
-                  <div className="w-full text-center py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl">
+                  <div className="w-full text-center py-2.5 bg-gray-100 text-gray-500 text-sm font-medium rounded-xl">
                     Plan actuel
                   </div>
                   {planExpiresAt && (
                     <div className={`flex items-center justify-center gap-1.5 text-xs rounded-lg py-1.5 px-2 ${
-                      subscriptionStatus === 'expired'      ? 'bg-red-50 text-red-600'    :
-                      subscriptionStatus === 'expiring_soon'? 'bg-orange-50 text-orange-600' :
+                      subscriptionStatus === 'expired'       ? 'bg-red-50 text-red-600' :
+                      subscriptionStatus === 'expiring_soon' ? 'bg-orange-50 text-orange-600' :
                       'bg-gray-50 text-gray-500'
                     }`}>
                       <CalendarDays className="w-3.5 h-3.5" />
                       {subscriptionStatus === 'expired'
                         ? `Expiré le ${new Date(planExpiresAt).toLocaleDateString('fr-FR')}`
-                        : `Expire le ${new Date(planExpiresAt).toLocaleDateString('fr-FR')}`
-                      }
+                        : `Expire le ${new Date(planExpiresAt).toLocaleDateString('fr-FR')}`}
                     </div>
                   )}
                   {canRenew && (
                     <button
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!!pendingRequest}
                       onClick={() => { setSelectedPlan(plan); setIsRenewal(true); }}
-                      title={pendingRequest ? 'Un paiement est déjà en cours' : ''}
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
                       {pendingRequest ? 'Paiement en cours…' : 'Renouveler'}
@@ -321,23 +381,28 @@ export default function Plans() {
               ) : isEnterprise ? (
                 <a
                   href={`mailto:${paymentConfig?.supportEmail || 'contact@factureapp.sn'}?subject=Demande%20plan%20Enterprise`}
-                  className={style.btn}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors"
                 >
                   Nous contacter
                 </a>
               ) : isUpgrade ? (
                 <button
-                  className={style.btn}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    plan.key === 'STARTER'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'btn-primary'
+                  }`}
                   disabled={!!pendingRequest}
                   onClick={() => { setSelectedPlan(plan); setIsRenewal(false); }}
-                  title={pendingRequest ? 'Un paiement est déjà en cours' : ''}
                 >
                   <Zap className="w-4 h-4" />
-                  {pendingRequest ? 'Paiement en cours…' : `Passer au ${plan.key.charAt(0) + plan.key.slice(1).toLowerCase()}`}
+                  {pendingRequest
+                    ? 'Paiement en cours…'
+                    : `Choisir ${plan.key.charAt(0) + plan.key.slice(1).toLowerCase()}`}
                 </button>
               ) : (
-                <div className="w-full text-center py-2.5 bg-gray-50 text-gray-400 text-sm rounded-xl flex items-center justify-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" /> Plan inférieur
+                <div className="w-full text-center py-2.5 bg-gray-50 text-gray-400 text-sm rounded-xl">
+                  Plan inférieur
                 </div>
               )}
             </div>
@@ -345,10 +410,11 @@ export default function Plans() {
         })}
       </div>
 
-      <p className="text-center text-xs text-gray-400 mt-8">
-        Abonnement sans engagement — 1 à 12 mois, sans frais cachés. Pour toute question :{' '}
+      {/* Footer */}
+      <p className="text-center text-xs text-gray-400 pb-4">
+        Sans frais cachés · Paiement via Wave, Orange Money, Free Money ou Expresso ·{' '}
         <a href={`mailto:${paymentConfig?.supportEmail || 'contact@factureapp.sn'}`} className="text-primary-600 hover:underline">
-          {paymentConfig?.supportEmail || 'contact@factureapp.sn'}
+          Support
         </a>
       </p>
 

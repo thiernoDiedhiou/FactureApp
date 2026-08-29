@@ -7,6 +7,7 @@ const {
   getDaysRemaining,
   computeNewExpiry
 } = require('../utils/subscriptionUtils');
+const { sendSubscriptionInvoice } = require('../services/emailService');
 
 const prisma = new PrismaClient();
 
@@ -421,6 +422,49 @@ const processUpgradeRequest = async (req, res) => {
       ? `Abonnement ${upgradeReq.targetPlan} renouvelé pour ${updated.organization.name}`
       : `Plan mis à jour vers ${upgradeReq.targetPlan} pour ${updated.organization.name}`
     : 'Demande rejetée';
+
+  // Facture par email lors de la validation manuelle admin — fire-and-forget
+  if (action === 'validate') {
+    const org = upgradeReq.organization;
+    const newStartedAt = new Date();
+    const newExpiresAt = computeNewExpiry(org, upgradeReq.targetPlan, upgradeReq.durationMonths);
+
+    (async () => {
+      try {
+        const [owner, platformConfig] = await Promise.all([
+          prisma.organizationMember.findFirst({
+            where:   { organizationId: org.id, role: 'OWNER' },
+            include: { user: true }
+          }),
+          prisma.platformConfig.findFirst()
+        ]);
+
+        if (!owner?.user?.email) return;
+
+        const invoiceRef = `ABN-${new Date().getFullYear()}-${upgradeReq.id.slice(0, 8).toUpperCase()}`;
+
+        await sendSubscriptionInvoice({
+          userEmail:      owner.user.email,
+          userName:       owner.user.name,
+          orgName:        org.name,
+          plan:           upgradeReq.targetPlan,
+          amount:         upgradeReq.amount,
+          durationMonths: upgradeReq.durationMonths,
+          transactionRef: upgradeReq.transactionRef,
+          paymentMethod:  upgradeReq.paymentMethod || 'manual',
+          startDate:      newStartedAt,
+          endDate:        newExpiresAt,
+          invoiceRef,
+          platformName:   platformConfig?.paymentName  || 'CFActure',
+          supportEmail:   platformConfig?.supportEmail || 'contact@factureapp.sn'
+        });
+
+        console.log(`[Invoice] Facture admin envoyée à ${owner.user.email} — ${invoiceRef}`);
+      } catch (err) {
+        console.error('[Invoice] Erreur envoi facture admin:', err.message);
+      }
+    })();
+  }
 
   res.json({ success: true, message, data: { request: updated } });
 };

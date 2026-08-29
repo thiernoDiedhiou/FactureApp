@@ -3,16 +3,186 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   Save, Upload, Trash2, Loader2, Building2, Palette,
-  Globe, Image, FileText, Lock
+  Globe, Image, FileText, Lock, Eye, EyeOff, ChevronDown
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const DOCUMENT_STYLES = [
-  { value: 'classique', label: 'Classique', desc: 'Mise en page sobre, noir et blanc' },
-  { value: 'moderne', label: 'Moderne', desc: 'Couleurs vives, design épuré' },
-  { value: 'compact', label: 'Compact', desc: 'Format condensé' }
+  { value: 'classique', label: 'Classique', desc: 'Sobre, noir et blanc' },
+  { value: 'moderne',   label: 'Moderne',   desc: 'Couleurs vives, épuré' },
+  { value: 'compact',  label: 'Compact',   desc: 'Format condensé' }
 ];
+
+// ── Mini aperçu de document ───────────────────────────────────────────────────
+function DocumentPreview({ style, color, companyName }) {
+  const name = companyName || 'Votre Entreprise';
+
+  // Styles visuels par template
+  const cfg = {
+    classique: {
+      headerBg:     '#1a1a1a',
+      headerColor:  '#ffffff',
+      accentColor:  color,
+      totalBg:      '#f4f4f4',
+      totalColor:   color,          // couleur primaire sur le total
+      headerBorder: 'none',
+      topAccent:    color,          // barre colorée en haut du document
+      rowBg:        '#fafafa',
+    },
+    moderne: {
+      headerBg:     color,
+      headerColor:  '#ffffff',
+      accentColor:  color,
+      totalBg:      color,
+      totalColor:   '#ffffff',
+      headerBorder: 'none',
+      topAccent:    'transparent',
+      rowBg:        '#fafafa',
+    },
+    compact: {
+      headerBg:     '#f8f9fa',
+      headerColor:  '#111111',
+      accentColor:  color,
+      totalBg:      '#f1f5f9',
+      totalColor:   color,
+      headerBorder: `3px solid ${color}`,
+      topAccent:    'transparent',
+      rowBg:        '#ffffff',
+    },
+  };
+  const c = cfg[style] || cfg.classique;
+  const gap = style === 'compact' ? '8px 18px' : '14px 18px';
+
+  return (
+    // Conteneur avec ratio fixe — le document intérieur est mis à l'échelle
+    <div style={{ position: 'relative', width: '100%', height: '220px', overflow: 'hidden' }}>
+      <div style={{
+        position:        'absolute',
+        top:             0,
+        left:            0,
+        width:           '520px',
+        transformOrigin: 'top left',
+        transform:       'scale(0.44)',
+        fontFamily:      'system-ui, sans-serif',
+        background:      '#ffffff',
+        borderRadius:    '8px',
+        boxShadow:       '0 2px 16px rgba(0,0,0,0.13)',
+        overflow:        'hidden',
+        userSelect:      'none',
+        borderTop:       `4px solid ${c.topAccent}`,
+      }}>
+        {/* En-tête */}
+        <div style={{
+          background:   c.headerBg,
+          color:        c.headerColor,
+          padding:      gap,
+          borderBottom: c.headerBorder,
+          display:      'flex',
+          justifyContent: 'space-between',
+          alignItems:   'flex-start',
+        }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '15px' }}>{name}</div>
+            <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>Dakar, Sénégal</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontWeight: 800, fontSize: '16px', letterSpacing: '1px' }}>FACTURE</div>
+            <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '2px' }}>FAC-2024-001</div>
+          </div>
+        </div>
+
+        {/* Bloc client + dates */}
+        <div style={{
+          display:       'flex',
+          justifyContent:'space-between',
+          padding:       gap,
+          borderBottom:  '1px solid #efefef',
+        }}>
+          <div>
+            <div style={{ fontSize: '8px', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', marginBottom: '3px' }}>Facturé à</div>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#111' }}>Client Exemple</div>
+            <div style={{ fontSize: '10px', color: '#666' }}>client@exemple.sn</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '8px', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', marginBottom: '3px' }}>Date</div>
+            <div style={{ fontSize: '11px', color: '#333' }}>28/08/2024</div>
+            <div style={{ fontSize: '9px', color: '#999', marginTop: '2px' }}>Échéance : 27/09/2024</div>
+          </div>
+        </div>
+
+        {/* En-tête tableau */}
+        <div style={{
+          display:             'grid',
+          gridTemplateColumns: '1fr 50px 70px 80px',
+          padding:             style === 'compact' ? '5px 18px' : '8px 18px',
+          background:          '#f5f5f5',
+          borderBottom:        '1px solid #ebebeb',
+          fontSize:            '9px',
+          fontWeight:          700,
+          color:               '#777',
+          textTransform:       'uppercase',
+        }}>
+          <span>Description</span>
+          <span style={{ textAlign: 'center' }}>Qté</span>
+          <span style={{ textAlign: 'right' }}>P.U.</span>
+          <span style={{ textAlign: 'right' }}>Total</span>
+        </div>
+
+        {/* Lignes */}
+        {[
+          { desc: 'Prestation de service',  qty: 1, pu: '50 000', total: '50 000' },
+          { desc: 'Consultation mensuelle', qty: 2, pu: '15 000', total: '30 000' },
+        ].map((item, i) => (
+          <div key={i} style={{
+            display:             'grid',
+            gridTemplateColumns: '1fr 50px 70px 80px',
+            padding:             style === 'compact' ? '6px 18px' : '10px 18px',
+            borderBottom:        '1px solid #f5f5f5',
+            background:          i % 2 === 0 ? c.rowBg : '#fff',
+            fontSize:            '11px',
+            color:               '#333',
+          }}>
+            <span>{item.desc}</span>
+            <span style={{ textAlign: 'center', color: '#888' }}>{item.qty}</span>
+            <span style={{ textAlign: 'right', color: '#888' }}>{item.pu} XOF</span>
+            <span style={{ textAlign: 'right', fontWeight: 600 }}>{item.total} XOF</span>
+          </div>
+        ))}
+
+        {/* Totaux */}
+        <div style={{ padding: gap, display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ width: '210px' }}>
+            {[
+              { label: 'Sous-total', value: '80 000 FCFA' },
+              { label: 'TVA (18%)', value: '14 400 FCFA' },
+            ].map(row => (
+              <div key={row.label} style={{
+                display: 'flex', justifyContent: 'space-between',
+                padding: '3px 0', fontSize: '10px', color: '#777',
+              }}>
+                <span>{row.label}</span><span>{row.value}</span>
+              </div>
+            ))}
+            <div style={{
+              display:        'flex',
+              justifyContent: 'space-between',
+              padding:        '7px 10px',
+              marginTop:      '5px',
+              borderRadius:   '6px',
+              background:     c.totalBg,
+              color:          c.totalColor,
+              fontSize:       '13px',
+              fontWeight:     800,
+            }}>
+              <span>TOTAL TTC</span><span>94 400 FCFA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const LANGUAGES = [
   { value: 'fr', label: 'Français' },
@@ -72,6 +242,9 @@ export default function Settings() {
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwLoading, setPwLoading] = useState(false);
   const [pwErrors, setPwErrors] = useState({});
+  const [showPwSection, setShowPwSection] = useState(false);
+  const [showPw, setShowPw] = useState({ current: false, newPw: false, confirm: false });
+  const togglePw = (key) => setShowPw(p => ({ ...p, [key]: !p[key] }));
 
   const f = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
@@ -327,55 +500,78 @@ export default function Settings() {
             {t('settings.documentStyle')}
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            {DOCUMENT_STYLES.map(style => (
-              <label key={style.value}
-                className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  form.documentStyle === style.value
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}>
-                <input type="radio" name="documentStyle" value={style.value}
-                  checked={form.documentStyle === style.value}
-                  onChange={(e) => f('documentStyle', e.target.value)}
-                  className="sr-only" />
-                <div className="flex items-center gap-2 mb-1">
-                  {form.documentStyle === style.value && (
-                    <div className="w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Colonne gauche : contrôles */}
+            <div className="space-y-5">
+              {/* Sélecteur de template */}
+              <div className="grid grid-cols-3 gap-3">
+                {DOCUMENT_STYLES.map(style => (
+                  <label key={style.value}
+                    className={`relative p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      form.documentStyle === style.value
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                    <input type="radio" name="documentStyle" value={style.value}
+                      checked={form.documentStyle === style.value}
+                      onChange={(e) => f('documentStyle', e.target.value)}
+                      className="sr-only" />
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {form.documentStyle === style.value && (
+                        <div className="w-3.5 h-3.5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                        </div>
+                      )}
+                      <p className="font-semibold text-gray-900 text-sm leading-tight">{style.label}</p>
                     </div>
-                  )}
-                  <p className="font-semibold text-gray-900">{style.label}</p>
-                </div>
-                <p className="text-xs text-gray-500">{style.desc}</p>
-              </label>
-            ))}
-          </div>
+                    <p className="text-xs text-gray-400 leading-tight">{style.desc}</p>
+                  </label>
+                ))}
+              </div>
 
-          {/* Color picker */}
-          <div>
-            <label className="label flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              {t('settings.primaryColor')}
-            </label>
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              {PRESET_COLORS.map(color => (
-                <button key={color} type="button"
-                  onClick={() => f('primaryColor', color)}
-                  className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                    form.primaryColor === color ? 'border-gray-900 scale-110' : 'border-transparent'
-                  }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-              <input type="color" value={form.primaryColor}
-                onChange={(e) => f('primaryColor', e.target.value)}
-                className="w-8 h-8 rounded-full cursor-pointer border border-gray-300"
-                title="Couleur personnalisée" />
-              <span className="text-sm text-gray-500 font-mono">{form.primaryColor}</span>
+              {/* Sélecteur de couleur */}
+              <div>
+                <label className="label flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  {t('settings.primaryColor')}
+                </label>
+                <div className="flex flex-wrap items-center gap-2.5 mt-2">
+                  {PRESET_COLORS.map(color => (
+                    <button key={color} type="button"
+                      onClick={() => f('primaryColor', color)}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${
+                        form.primaryColor === color ? 'border-gray-900 scale-110' : 'border-transparent'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  <input type="color" value={form.primaryColor}
+                    onChange={(e) => f('primaryColor', e.target.value)}
+                    className="w-7 h-7 rounded-full cursor-pointer border border-gray-300"
+                    title="Couleur personnalisée" />
+                  <span className="text-xs text-gray-500 font-mono">{form.primaryColor}</span>
+                </div>
+                <div className="mt-3 h-1.5 rounded-full transition-colors duration-300" style={{ backgroundColor: form.primaryColor }} />
+              </div>
             </div>
-            {/* Color preview */}
-            <div className="mt-3 h-2 rounded-full" style={{ backgroundColor: form.primaryColor }} />
+
+            {/* Colonne droite : aperçu live */}
+            <div>
+              <p className="label mb-2 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: form.primaryColor }} />
+                Aperçu en direct
+              </p>
+              <div className="bg-gray-100 rounded-2xl p-3 border border-gray-200">
+                <DocumentPreview
+                  style={form.documentStyle}
+                  color={form.primaryColor}
+                  companyName={form.companyName}
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                Modifiez le style et la couleur pour voir le résultat
+              </p>
+            </div>
           </div>
         </div>
 
@@ -387,40 +583,98 @@ export default function Settings() {
         </div>
       </form>
 
-      {/* Change password */}
-      <div className="card p-6">
-        <h2 className="section-title flex items-center gap-2 mb-5">
-          <Lock className="w-5 h-5 text-primary-600" />
-          Changer le mot de passe
-        </h2>
-        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-          <div>
-            <label className="label">Mot de passe actuel</label>
-            <input type="password" className={`input-field ${pwErrors.current ? 'border-red-500' : ''}`}
-              value={pwForm.current}
-              onChange={(e) => { setPwForm(f => ({ ...f, current: e.target.value })); setPwErrors({}); }} />
-            {pwErrors.current && <p className="text-red-500 text-xs mt-1">{pwErrors.current}</p>}
+      {/* Change password — section repliable */}
+      <div className="card overflow-hidden">
+        {/* En-tête cliquable */}
+        <button
+          type="button"
+          onClick={() => {
+            setShowPwSection(v => !v);
+            if (showPwSection) {
+              setPwForm({ current: '', newPw: '', confirm: '' });
+              setPwErrors({});
+              setShowPw({ current: false, newPw: false, confirm: false });
+            }
+          }}
+          className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="section-title flex items-center gap-2 mb-0">
+            <Lock className="w-5 h-5 text-primary-600" />
+            Changer le mot de passe
+          </h2>
+          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showPwSection ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Formulaire repliable */}
+        {showPwSection && (
+          <div className="px-6 pb-6 border-t border-gray-100 pt-5">
+            <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+
+              {/* Mot de passe actuel */}
+              <div>
+                <label className="label">Mot de passe actuel</label>
+                <div className="relative">
+                  <input
+                    type={showPw.current ? 'text' : 'password'}
+                    className={`input-field pr-10 ${pwErrors.current ? 'border-red-500' : ''}`}
+                    value={pwForm.current}
+                    onChange={(e) => { setPwForm(f => ({ ...f, current: e.target.value })); setPwErrors({}); }}
+                    autoComplete="current-password"
+                  />
+                  <button type="button" onClick={() => togglePw('current')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                    {showPw.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {pwErrors.current && <p className="text-red-500 text-xs mt-1">{pwErrors.current}</p>}
+              </div>
+
+              {/* Nouveau mot de passe */}
+              <div>
+                <label className="label">Nouveau mot de passe</label>
+                <div className="relative">
+                  <input
+                    type={showPw.newPw ? 'text' : 'password'}
+                    className={`input-field pr-10 ${pwErrors.newPw ? 'border-red-500' : ''}`}
+                    value={pwForm.newPw}
+                    onChange={(e) => { setPwForm(f => ({ ...f, newPw: e.target.value })); setPwErrors({}); }}
+                    placeholder="Min. 8 caractères"
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => togglePw('newPw')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                    {showPw.newPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {pwErrors.newPw && <p className="text-red-500 text-xs mt-1">{pwErrors.newPw}</p>}
+              </div>
+
+              {/* Confirmer */}
+              <div>
+                <label className="label">Confirmer le mot de passe</label>
+                <div className="relative">
+                  <input
+                    type={showPw.confirm ? 'text' : 'password'}
+                    className={`input-field pr-10 ${pwErrors.confirm ? 'border-red-500' : ''}`}
+                    value={pwForm.confirm}
+                    onChange={(e) => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwErrors({}); }}
+                    autoComplete="new-password"
+                  />
+                  <button type="button" onClick={() => togglePw('confirm')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                    {showPw.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {pwErrors.confirm && <p className="text-red-500 text-xs mt-1">{pwErrors.confirm}</p>}
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={pwLoading}>
+                {pwLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                Modifier le mot de passe
+              </button>
+            </form>
           </div>
-          <div>
-            <label className="label">Nouveau mot de passe</label>
-            <input type="password" className={`input-field ${pwErrors.newPw ? 'border-red-500' : ''}`}
-              value={pwForm.newPw}
-              onChange={(e) => { setPwForm(f => ({ ...f, newPw: e.target.value })); setPwErrors({}); }}
-              placeholder="Min. 8 caractères" />
-            {pwErrors.newPw && <p className="text-red-500 text-xs mt-1">{pwErrors.newPw}</p>}
-          </div>
-          <div>
-            <label className="label">Confirmer le mot de passe</label>
-            <input type="password" className={`input-field ${pwErrors.confirm ? 'border-red-500' : ''}`}
-              value={pwForm.confirm}
-              onChange={(e) => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwErrors({}); }} />
-            {pwErrors.confirm && <p className="text-red-500 text-xs mt-1">{pwErrors.confirm}</p>}
-          </div>
-          <button type="submit" className="btn-primary" disabled={pwLoading}>
-            {pwLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-            Modifier le mot de passe
-          </button>
-        </form>
+        )}
       </div>
     </div>
   );
