@@ -46,6 +46,7 @@ function SubscriptionBanner({ organization }) {
       </span>
       <Link
         to="/app/plans"
+        state={{ openRenewal: true }}
         className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold flex-shrink-0 transition-colors ${
           graceLapsed || expired
             ? 'bg-white text-red-600 hover:bg-red-50'

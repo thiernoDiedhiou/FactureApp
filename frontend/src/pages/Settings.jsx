@@ -620,10 +620,10 @@ export default function Settings() {
             {/* Colonne gauche : contrôles */}
             <div className="space-y-5">
               {/* Sélecteur de template */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {DOCUMENT_STYLES.map(style => (
                   <label key={style.value}
-                    className={`relative p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                    className={`relative p-2 sm:p-3 border-2 rounded-xl cursor-pointer transition-all overflow-hidden min-w-0 ${
                       form.documentStyle === style.value
                         ? 'border-primary-500 bg-primary-50'
                         : 'border-gray-200 hover:border-gray-300'
@@ -632,15 +632,15 @@ export default function Settings() {
                       checked={form.documentStyle === style.value}
                       onChange={(e) => f('documentStyle', e.target.value)}
                       className="sr-only" />
-                    <div className="flex items-center gap-1.5 mb-1">
+                    <div className="flex items-center gap-1 mb-1 min-w-0">
                       {form.documentStyle === style.value && (
-                        <div className="w-3.5 h-3.5 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-3 h-3 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
                           <div className="w-1.5 h-1.5 bg-white rounded-full" />
                         </div>
                       )}
-                      <p className="font-semibold text-gray-900 text-sm leading-tight">{style.label}</p>
+                      <p className="font-semibold text-gray-900 text-xs leading-tight truncate">{style.label}</p>
                     </div>
-                    <p className="text-xs text-gray-400 leading-tight">{style.desc}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400 leading-tight line-clamp-2">{style.desc}</p>
                   </label>
                 ))}
               </div>

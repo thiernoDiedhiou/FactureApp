@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { authenticate, requireOrganization } = require('../middlewares/auth');
 const { pdfLimiter } = require('../middlewares/rateLimiter');
@@ -11,19 +12,44 @@ const { generatePDF } = require('../services/pdfService');
 const { sendDocumentEmail } = require('../services/emailService');
 
 // ─── Public PDF view via signed token (no auth required) ──────────────────────
-router.get('/view/:token', pdfLimiter, async (req, res) => {
+router.get('/view/:tokenOrDocId', pdfLimiter, async (req, res) => {
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient();
 
-  let payload;
-  try {
-    payload = jwt.verify(req.params.token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ success: false, message: 'Lien expiré ou invalide' });
+  let documentWhere;
+
+  if (req.query.sig) {
+    // Format HMAC court : /view/:docId?exp=<ms>&sig=<20chars>
+    const { exp, sig } = req.query;
+    const docId = req.params.tokenOrDocId;
+
+    if (!exp || !sig || Date.now() > parseInt(exp, 10)) {
+      return res.status(401).json({ success: false, message: 'Lien expiré ou invalide' });
+    }
+
+    const expectedSig = crypto.createHmac('sha256', process.env.JWT_SECRET)
+      .update(`${docId}.${exp}`)
+      .digest('base64url')
+      .slice(0, 20);
+
+    if (sig !== expectedSig) {
+      return res.status(401).json({ success: false, message: 'Lien expiré ou invalide' });
+    }
+
+    documentWhere = { id: docId };
+  } else {
+    // Format JWT legacy (rétrocompatibilité — liens générés avant la migration)
+    let payload;
+    try {
+      payload = jwt.verify(req.params.tokenOrDocId, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ success: false, message: 'Lien expiré ou invalide' });
+    }
+    documentWhere = { id: payload.documentId, organizationId: payload.organizationId };
   }
 
   const document = await prisma.document.findFirst({
-    where: { id: payload.documentId, organizationId: payload.organizationId },
+    where: documentWhere,
     include: {
       client: true,
       items: { include: { product: true } }
@@ -35,7 +61,7 @@ router.get('/view/:token', pdfLimiter, async (req, res) => {
   }
 
   const settings = await prisma.settings.findUnique({
-    where: { organizationId: payload.organizationId }
+    where: { organizationId: document.organizationId }
   });
 
   const pdfBuffer = await generatePDF(document, settings);
@@ -103,14 +129,14 @@ router.post('/:id/share-link', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Document non trouvé' });
   }
 
-  const token = jwt.sign(
-    { documentId: document.id, organizationId: req.organizationId },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET)
+    .update(`${document.id}.${expiry}`)
+    .digest('base64url')
+    .slice(0, 20);
 
   const baseUrl = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-  const link = `${baseUrl}/api/documents/view/${token}`;
+  const link = `${baseUrl}/api/documents/view/${document.id}?exp=${expiry}&sig=${sig}`;
 
   res.json({ success: true, data: { link, expiresIn: '7 jours' } });
 });

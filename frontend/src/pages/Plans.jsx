@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Check, Zap, Loader2, X, Clock, AlertCircle, CalendarDays,
   RefreshCw, Phone, ShieldCheck, FileText, Users, UserCheck,
@@ -269,7 +269,9 @@ function PlanCard({ plan, currentPlan, subscriptionStatus, planExpiresAt, pendin
 // ── Page principale ───────────────────────────────────────────────────────────
 export default function Plans() {
   const { organization } = useAuth();
+  const location = useLocation();
   const planSelectorRef = useRef(null);
+  const autoOpenedRef = useRef(false);
 
   const [plans, setPlans]                   = useState([]);
   const [paymentConfig, setPaymentConfig]   = useState(null);
@@ -334,6 +336,14 @@ export default function Plans() {
   }, [organization]);
 
   const currentPlanData = plans.find(p => p.key === currentPlan);
+
+  // Auto-ouvrir le modal renouvellement si on vient du bandeau d'abonnement expiré
+  useEffect(() => {
+    if (location.state?.openRenewal && currentPlanData && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      openUpgrade(currentPlanData, true);
+    }
+  }, [currentPlanData, location.state]);
 
   // Historique : toutes les demandes sauf pending sans montant
   const invoiceHistory = allRequests
