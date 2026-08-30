@@ -14,33 +14,40 @@ function SubscriptionBanner({ organization }) {
     if (!organization || organization.plan === 'FREE' || !organization.planExpiresAt) return null;
     const days = Math.ceil((new Date(organization.planExpiresAt) - new Date()) / (1000 * 60 * 60 * 24));
     if (days > 7) return null;
-    return { days, expired: days <= 0 };
+    // Fallback sur plan nominal si l'API ne retourne pas encore effectivePlan (cache ancien)
+    const effectivePlan = organization.effectivePlan ?? organization.plan;
+    // graceLapsed = grâce de 3j écoulée, limitations FREE actives
+    const graceLapsed = effectivePlan === 'FREE' && organization.plan !== 'FREE';
+    return { days, expired: days <= 0, graceLapsed };
   }, [organization]);
 
   if (!status || dismissed) return null;
 
-  const { days, expired } = status;
+  const { days, expired, graceLapsed } = status;
+
+  // graceLapsed est non-dismissable : l'utilisateur doit agir
+  const canDismiss = !graceLapsed;
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 text-sm flex-shrink-0 ${
-      expired
-        ? 'bg-red-600 text-white'
-        : 'bg-orange-500 text-white'
+      graceLapsed || expired ? 'bg-red-600 text-white' : 'bg-orange-500 text-white'
     }`}>
-      {expired
+      {graceLapsed || expired
         ? <XCircle className="w-4 h-4 flex-shrink-0" />
         : <AlertTriangle className="w-4 h-4 flex-shrink-0" />
       }
       <span className="flex-1">
-        {expired
-          ? <>Votre abonnement <strong>{organization.plan}</strong> a expiré. Renouvelez pour maintenir l'accès à toutes vos fonctionnalités.</>
-          : <>Votre abonnement <strong>{organization.plan}</strong> expire dans <strong>{days} jour{days > 1 ? 's' : ''}</strong>. Pensez à renouveler.</>
+        {graceLapsed
+          ? <>Abonnement <strong>{organization.plan}</strong> expiré — vos créations sont désormais <strong>limitées au plan FREE</strong>. Renouvelez pour retrouver toutes vos fonctionnalités.</>
+          : expired
+            ? <>Votre abonnement <strong>{organization.plan}</strong> a expiré. Renouvelez pour maintenir l'accès à toutes vos fonctionnalités.</>
+            : <>Votre abonnement <strong>{organization.plan}</strong> expire dans <strong>{days} jour{days > 1 ? 's' : ''}</strong>. Pensez à renouveler.</>
         }
       </span>
       <Link
         to="/app/plans"
         className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold flex-shrink-0 transition-colors ${
-          expired
+          graceLapsed || expired
             ? 'bg-white text-red-600 hover:bg-red-50'
             : 'bg-white text-orange-600 hover:bg-orange-50'
         }`}
@@ -48,13 +55,15 @@ function SubscriptionBanner({ organization }) {
         <Zap className="w-3.5 h-3.5" />
         Renouveler
       </Link>
-      <button
-        onClick={() => setDismissed(true)}
-        className="p-1 rounded-lg hover:bg-white/20 transition-colors flex-shrink-0"
-        title="Masquer"
-      >
-        <X className="w-4 h-4" />
-      </button>
+      {canDismiss && (
+        <button
+          onClick={() => setDismissed(true)}
+          className="p-1 rounded-lg hover:bg-white/20 transition-colors flex-shrink-0"
+          title="Masquer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }

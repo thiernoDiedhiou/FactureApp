@@ -18,163 +18,215 @@ const DOCUMENT_STYLES = [
 function DocumentPreview({ style, color, companyName }) {
   const name = companyName || 'Votre Entreprise';
 
-  // Styles visuels par template
-  const cfg = {
-    classique: {
-      headerBg:     '#1a1a1a',
-      headerColor:  '#ffffff',
-      accentColor:  color,
-      totalBg:      '#f4f4f4',
-      totalColor:   color,          // couleur primaire sur le total
-      headerBorder: 'none',
-      topAccent:    color,          // barre colorée en haut du document
-      rowBg:        '#fafafa',
-    },
-    moderne: {
-      headerBg:     color,
-      headerColor:  '#ffffff',
-      accentColor:  color,
-      totalBg:      color,
-      totalColor:   '#ffffff',
-      headerBorder: 'none',
-      topAccent:    'transparent',
-      rowBg:        '#fafafa',
-    },
-    compact: {
-      headerBg:     '#f8f9fa',
-      headerColor:  '#111111',
-      accentColor:  color,
-      totalBg:      '#f1f5f9',
-      totalColor:   color,
-      headerBorder: `3px solid ${color}`,
-      topAccent:    'transparent',
-      rowBg:        '#ffffff',
-    },
+  const wrapper = { position: 'relative', width: '100%', height: '220px', overflow: 'hidden' };
+  const inner = {
+    position: 'absolute', top: 0, left: 0, width: '520px',
+    transformOrigin: 'top left', transform: 'scale(0.44)',
+    fontFamily: 'system-ui, sans-serif', background: '#ffffff',
+    borderRadius: '8px', boxShadow: '0 2px 16px rgba(0,0,0,0.13)',
+    overflow: 'hidden', userSelect: 'none',
   };
-  const c = cfg[style] || cfg.classique;
-  const gap = style === 'compact' ? '8px 18px' : '14px 18px';
+  const thStyle = {
+    display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+    padding: '6px 18px', background: '#f0f0f0', borderBottom: '1px solid #ddd',
+    fontSize: '9px', fontWeight: 700, color: '#555', textTransform: 'uppercase',
+  };
+  const items = [
+    { desc: 'Prestation de service',  qty: 1, pu: '50 000', tva: '18%', total: '59 000' },
+    { desc: 'Consultation mensuelle', qty: 2, pu: '15 000', tva: '18%', total: '35 400' },
+  ];
+  const totals = [['Sous-total', '80 000 FCFA'], ['TVA (18%)', '14 400 FCFA']];
 
+  // ── Template MODERNE ──────────────────────────────────────────────────────
+  if (style === 'moderne') {
+    return (
+      <div style={wrapper}>
+        <div style={inner}>
+          <div style={{ background: color, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '16px', color: '#fff' }}>{name}</div>
+              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.72)', marginTop: '2px' }}>Dakar, Sénégal</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 900, fontSize: '20px', color: '#fff', letterSpacing: '2px' }}>FACTURE</div>
+              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.8)', marginTop: '2px' }}>N° FAC-2026-001</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', borderBottom: '1px solid #eee' }}>
+            <div style={{ flex: 1, padding: '10px 18px', borderRight: '1px solid #eee' }}>
+              <div style={{ fontSize: '8px', fontWeight: 700, color: color, textTransform: 'uppercase', marginBottom: '4px' }}>Facturé à</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#111' }}>Client Exemple</div>
+              <div style={{ fontSize: '9px', color: '#666' }}>Mbour 2</div>
+              <div style={{ fontSize: '9px', color: '#666' }}>client@exemple.sn</div>
+            </div>
+            <div style={{ flex: 1, padding: '10px 18px' }}>
+              <div style={{ fontSize: '8px', fontWeight: 700, color: color, textTransform: 'uppercase', marginBottom: '4px' }}>Détails</div>
+              <div style={{ fontSize: '9px', color: '#444' }}>Date: 28/08/2026</div>
+              <div style={{ fontSize: '9px', color: '#444' }}>Échéance: 27/09/2026</div>
+              <div style={{ fontSize: '9px', marginTop: '2px' }}>Statut: <span style={{ color: '#16a34a', fontWeight: 700 }}>Payé</span></div>
+            </div>
+          </div>
+          <div style={thStyle}>
+            <span>Description</span><span style={{ textAlign: 'center' }}>Qté</span>
+            <span style={{ textAlign: 'right' }}>P.U.</span><span style={{ textAlign: 'right' }}>TVA</span>
+            <span style={{ textAlign: 'right' }}>Total</span>
+          </div>
+          {items.map((item, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+              padding: '8px 18px', borderBottom: '1px solid #f5f5f5',
+              background: i % 2 === 0 ? '#fafafa' : '#fff', fontSize: '11px', color: '#111',
+            }}>
+              <span>{item.desc}</span>
+              <span style={{ textAlign: 'center', color: '#888' }}>{item.qty}</span>
+              <span style={{ textAlign: 'right', color: '#888' }}>{item.pu}</span>
+              <span style={{ textAlign: 'right', color: '#888' }}>{item.tva}</span>
+              <span style={{ textAlign: 'right', fontWeight: 600 }}>{item.total}</span>
+            </div>
+          ))}
+          <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ width: '200px' }}>
+              {totals.map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '10px', color: '#777' }}>
+                  <span>{label}</span><span>{val}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 10px', marginTop: '4px', borderRadius: '4px', background: color, color: '#fff', fontSize: '13px', fontWeight: 800 }}>
+                <span>TOTAL TTC</span><span>94 400 FCFA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Template COMPACT ──────────────────────────────────────────────────────
+  if (style === 'compact') {
+    return (
+      <div style={wrapper}>
+        <div style={inner}>
+          {/* En-tête : nom entreprise | FACTURE */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 18px', borderBottom: `2px solid ${color}` }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: '#111' }}>{name}</div>
+              <div style={{ fontSize: '9px', color, marginTop: '2px' }}>Dakar, Sénégal</div>
+              <div style={{ fontSize: '9px', color }}>+221 77 123 45 67</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 800, fontSize: '16px', letterSpacing: '1px', color: '#111' }}>FACTURE</div>
+              <div style={{ fontSize: '9px', color, marginTop: '2px' }}>N° FAC-2026-001</div>
+              <div style={{ fontSize: '9px', color }}>28/08/2026</div>
+              <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, marginTop: '2px' }}>Payé</div>
+            </div>
+          </div>
+          {/* Section client — infos en couleur primaire */}
+          <div style={{ padding: '7px 18px', borderBottom: '1px solid #eee' }}>
+            <div style={{ fontSize: '8px', fontWeight: 700, color, textTransform: 'uppercase', marginBottom: '3px' }}>Client:</div>
+            <div style={{ fontSize: '11px', color }}>Client Exemple | Mbour 2</div>
+            <div style={{ fontSize: '9px', color }}>+221 77 000 00 00 | client@exemple.sn</div>
+          </div>
+          {/* Header tableau — fond sombre #333333 */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+            padding: '5px 18px', background: '#333333',
+            fontSize: '9px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase',
+          }}>
+            <span>Description</span><span style={{ textAlign: 'center' }}>Qté</span>
+            <span style={{ textAlign: 'right' }}>P.U.</span><span style={{ textAlign: 'right' }}>TVA</span>
+            <span style={{ textAlign: 'right' }}>Total</span>
+          </div>
+          {/* Lignes — description en couleur, données numériques en gris */}
+          {items.map((item, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+              padding: '5px 18px', borderBottom: '1px solid #f0f0f0',
+              background: i % 2 === 0 ? '#ffffff' : '#f9f9f9', fontSize: '10px',
+            }}>
+              <span style={{ color }}>{item.desc}</span>
+              <span style={{ textAlign: 'center', color: '#666' }}>{item.qty}</span>
+              <span style={{ textAlign: 'right', color: '#666' }}>{item.pu}</span>
+              <span style={{ textAlign: 'right', color: '#666' }}>{item.tva}</span>
+              <span style={{ textAlign: 'right', fontWeight: 600, color: '#333' }}>{item.total}</span>
+            </div>
+          ))}
+          <div style={{ padding: '8px 18px', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ width: '200px' }}>
+              {totals.map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '10px', color: '#777' }}>
+                  <span>{label}</span><span>{val}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', marginTop: '4px', borderRadius: '4px', background: '#f1f5f9', color: '#111111', fontSize: '12px', fontWeight: 800 }}>
+                <span>TOTAL TTC</span><span>94 400 FCFA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Template CLASSIQUE (défaut) ────────────────────────────────────────────
   return (
-    // Conteneur avec ratio fixe — le document intérieur est mis à l'échelle
-    <div style={{ position: 'relative', width: '100%', height: '220px', overflow: 'hidden' }}>
-      <div style={{
-        position:        'absolute',
-        top:             0,
-        left:            0,
-        width:           '520px',
-        transformOrigin: 'top left',
-        transform:       'scale(0.44)',
-        fontFamily:      'system-ui, sans-serif',
-        background:      '#ffffff',
-        borderRadius:    '8px',
-        boxShadow:       '0 2px 16px rgba(0,0,0,0.13)',
-        overflow:        'hidden',
-        userSelect:      'none',
-        borderTop:       `4px solid ${c.topAccent}`,
-      }}>
-        {/* En-tête */}
-        <div style={{
-          background:   c.headerBg,
-          color:        c.headerColor,
-          padding:      gap,
-          borderBottom: c.headerBorder,
-          display:      'flex',
-          justifyContent: 'space-between',
-          alignItems:   'flex-start',
-        }}>
+    <div style={wrapper}>
+      <div style={inner}>
+        {/* En-tête : nom entreprise à gauche, FACTURE + infos à droite */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px 18px', borderBottom: '1px solid #e0e0e0' }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '15px' }}>{name}</div>
-            <div style={{ fontSize: '10px', opacity: 0.7, marginTop: '2px' }}>Dakar, Sénégal</div>
+            <div style={{ fontWeight: 800, fontSize: '16px', color: '#111' }}>{name}</div>
+            <div style={{ fontSize: '9px', color: '#666', marginTop: '3px' }}>Dakar, Sénégal</div>
+            <div style={{ fontSize: '9px', color: '#666' }}>+221 77 123 45 67</div>
+            <div style={{ fontSize: '9px', color: '#666' }}>contact@entreprise.sn</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 800, fontSize: '16px', letterSpacing: '1px' }}>FACTURE</div>
-            <div style={{ fontSize: '10px', opacity: 0.75, marginTop: '2px' }}>FAC-2024-001</div>
+            <div style={{ fontWeight: 900, fontSize: '22px', letterSpacing: '2px', color: '#111' }}>FACTURE</div>
+            <div style={{ fontSize: '9px', color: '#555', marginTop: '2px' }}>N° FAC-2026-001</div>
+            <div style={{ fontSize: '9px', color: '#555' }}>Date: 28/08/2026</div>
+            <div style={{ fontSize: '9px', color: '#555' }}>Échéance: 27/09/2026</div>
+            <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: 700, marginTop: '3px' }}>Payé</div>
           </div>
         </div>
-
-        {/* Bloc client + dates */}
-        <div style={{
-          display:       'flex',
-          justifyContent:'space-between',
-          padding:       gap,
-          borderBottom:  '1px solid #efefef',
-        }}>
-          <div>
-            <div style={{ fontSize: '8px', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', marginBottom: '3px' }}>Facturé à</div>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#111' }}>Client Exemple</div>
-            <div style={{ fontSize: '10px', color: '#666' }}>client@exemple.sn</div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '8px', fontWeight: 700, color: '#aaa', textTransform: 'uppercase', marginBottom: '3px' }}>Date</div>
-            <div style={{ fontSize: '11px', color: '#333' }}>28/08/2024</div>
-            <div style={{ fontSize: '9px', color: '#999', marginTop: '2px' }}>Échéance : 27/09/2024</div>
-          </div>
+        {/* Section client */}
+        <div style={{ padding: '10px 18px', borderBottom: '1px solid #eee' }}>
+          <div style={{ fontSize: '8px', fontWeight: 700, color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Facturé à:</div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#111' }}>Client Exemple</div>
+          <div style={{ fontSize: '10px', color: '#555' }}>Mbour 2</div>
+          <div style={{ fontSize: '10px', color: '#555' }}>+221 77 000 00 00 | client@exemple.sn</div>
         </div>
-
-        {/* En-tête tableau */}
+        {/* En-tête tableau — fond sombre comme le PDF */}
         <div style={{
-          display:             'grid',
-          gridTemplateColumns: '1fr 50px 70px 80px',
-          padding:             style === 'compact' ? '5px 18px' : '8px 18px',
-          background:          '#f5f5f5',
-          borderBottom:        '1px solid #ebebeb',
-          fontSize:            '9px',
-          fontWeight:          700,
-          color:               '#777',
-          textTransform:       'uppercase',
+          display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+          padding: '7px 18px', background: '#1a1a1a',
+          fontSize: '9px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase',
         }}>
-          <span>Description</span>
-          <span style={{ textAlign: 'center' }}>Qté</span>
-          <span style={{ textAlign: 'right' }}>P.U.</span>
+          <span>Description</span><span style={{ textAlign: 'center' }}>Qté</span>
+          <span style={{ textAlign: 'right' }}>P.U.</span><span style={{ textAlign: 'right' }}>TVA</span>
           <span style={{ textAlign: 'right' }}>Total</span>
         </div>
-
-        {/* Lignes */}
-        {[
-          { desc: 'Prestation de service',  qty: 1, pu: '50 000', total: '50 000' },
-          { desc: 'Consultation mensuelle', qty: 2, pu: '15 000', total: '30 000' },
-        ].map((item, i) => (
+        {/* Lignes — Classique est noir et blanc, pas de couleur primaire */}
+        {items.map((item, i) => (
           <div key={i} style={{
-            display:             'grid',
-            gridTemplateColumns: '1fr 50px 70px 80px',
-            padding:             style === 'compact' ? '6px 18px' : '10px 18px',
-            borderBottom:        '1px solid #f5f5f5',
-            background:          i % 2 === 0 ? c.rowBg : '#fff',
-            fontSize:            '11px',
-            color:               '#333',
+            display: 'grid', gridTemplateColumns: '1fr 38px 68px 48px 72px',
+            padding: '8px 18px', borderBottom: '1px solid #f0f0f0',
+            background: i % 2 === 0 ? '#fafafa' : '#fff', fontSize: '11px',
           }}>
-            <span>{item.desc}</span>
+            <span style={{ color: '#111111' }}>{item.desc}</span>
             <span style={{ textAlign: 'center', color: '#888' }}>{item.qty}</span>
-            <span style={{ textAlign: 'right', color: '#888' }}>{item.pu} XOF</span>
-            <span style={{ textAlign: 'right', fontWeight: 600 }}>{item.total} XOF</span>
+            <span style={{ textAlign: 'right', color: '#444' }}>{item.pu}</span>
+            <span style={{ textAlign: 'right', color: '#888' }}>{item.tva}</span>
+            <span style={{ textAlign: 'right', fontWeight: 600, color: '#111' }}>{item.total}</span>
           </div>
         ))}
-
         {/* Totaux */}
-        <div style={{ padding: gap, display: 'flex', justifyContent: 'flex-end' }}>
-          <div style={{ width: '210px' }}>
-            {[
-              { label: 'Sous-total', value: '80 000 FCFA' },
-              { label: 'TVA (18%)', value: '14 400 FCFA' },
-            ].map(row => (
-              <div key={row.label} style={{
-                display: 'flex', justifyContent: 'space-between',
-                padding: '3px 0', fontSize: '10px', color: '#777',
-              }}>
-                <span>{row.label}</span><span>{row.value}</span>
+        <div style={{ padding: '10px 18px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ width: '200px' }}>
+            {totals.map(([label, val]) => (
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', fontSize: '10px', color: '#777' }}>
+                <span>{label}</span><span>{val}</span>
               </div>
             ))}
-            <div style={{
-              display:        'flex',
-              justifyContent: 'space-between',
-              padding:        '7px 10px',
-              marginTop:      '5px',
-              borderRadius:   '6px',
-              background:     c.totalBg,
-              color:          c.totalColor,
-              fontSize:       '13px',
-              fontWeight:     800,
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 10px', marginTop: '4px', borderRadius: '4px', background: '#f4f4f4', color: '#111111', fontSize: '13px', fontWeight: 800 }}>
               <span>TOTAL TTC</span><span>94 400 FCFA</span>
             </div>
           </div>
@@ -207,11 +259,15 @@ export default function Settings() {
 
   const [form, setForm] = useState({
     companyName: settings.companyName || '',
+    activity: settings.activity || '',
     address: settings.address || '',
     phone: settings.phone || '',
     email: settings.email || '',
     website: settings.website || '',
     ninea: settings.ninea || '',
+    rccm: settings.rccm || '',
+    bankName: settings.bankName || '',
+    bankAccount: settings.bankAccount || '',
     defaultLanguage: settings.defaultLanguage || 'fr',
     defaultCurrency: settings.defaultCurrency || 'XOF',
     defaultTvaRate: settings.defaultTvaRate ?? 18,
@@ -223,11 +279,15 @@ export default function Settings() {
     if (!settings.id) return;
     setForm({
       companyName: settings.companyName || '',
+      activity: settings.activity || '',
       address: settings.address || '',
       phone: settings.phone || '',
       email: settings.email || '',
       website: settings.website || '',
       ninea: settings.ninea || '',
+      rccm: settings.rccm || '',
+      bankName: settings.bankName || '',
+      bankAccount: settings.bankAccount || '',
       defaultLanguage: settings.defaultLanguage || 'fr',
       defaultCurrency: settings.defaultCurrency || 'XOF',
       defaultTvaRate: settings.defaultTvaRate ?? 18,
@@ -332,50 +392,106 @@ export default function Settings() {
       {/* Company info */}
       <form onSubmit={handleSave} className="space-y-6">
         <div className="card p-6">
-          <h2 className="section-title flex items-center gap-2 mb-5">
+          <h2 className="section-title flex items-center gap-2 mb-6">
             <Building2 className="w-5 h-5 text-primary-600" />
             {t('settings.company')}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="label">{t('settings.companyName')}</label>
-              <input type="text" className="input-field" value={form.companyName}
-                onChange={(e) => f('companyName', e.target.value)}
-                placeholder="DigiTech Solutions SARL" />
+
+          {/* ── Identité ── */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Identité</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="label">{t('settings.companyName')}</label>
+                <input type="text" className="input-field" value={form.companyName}
+                  onChange={(e) => f('companyName', e.target.value)}
+                  placeholder="DigiTech Solutions SARL" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label">
+                  Secteur / Activité
+                  <span className="text-gray-400 text-xs ml-1 font-normal">— affiché sous le nom sur les documents</span>
+                </label>
+                <input type="text" className="input-field" value={form.activity}
+                  onChange={(e) => f('activity', e.target.value)}
+                  placeholder="Commerce Général Import - Export" />
+              </div>
             </div>
-            <div className="sm:col-span-2">
-              <label className="label">{t('settings.address')}</label>
-              <textarea className="input-field resize-none" rows={2}
-                value={form.address}
-                onChange={(e) => f('address', e.target.value)}
-                placeholder="Rue 10, Cité Keur Gorgui, Dakar" />
+          </div>
+
+          {/* ── Coordonnées ── */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Coordonnées</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="label">{t('settings.address')}</label>
+                <textarea className="input-field resize-none" rows={2}
+                  value={form.address}
+                  onChange={(e) => f('address', e.target.value)}
+                  placeholder="Rue 10, Cité Keur Gorgui, Dakar" />
+              </div>
+              <div>
+                <label className="label">{t('settings.phone')}</label>
+                <input type="tel" className="input-field" value={form.phone}
+                  onChange={(e) => f('phone', e.target.value)}
+                  placeholder="+221 77 123 45 67" />
+              </div>
+              <div>
+                <label className="label">{t('settings.email')}</label>
+                <input type="email" className="input-field" value={form.email}
+                  onChange={(e) => f('email', e.target.value)}
+                  placeholder="contact@entreprise.sn" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label">{t('settings.website')}</label>
+                <input type="text" className="input-field" value={form.website}
+                  onChange={(e) => f('website', e.target.value)}
+                  placeholder="www.entreprise.sn" />
+              </div>
             </div>
-            <div>
-              <label className="label">{t('settings.phone')}</label>
-              <input type="tel" className="input-field" value={form.phone}
-                onChange={(e) => f('phone', e.target.value)}
-                placeholder="+221 77 123 45 67" />
+          </div>
+
+          {/* ── Identifiants légaux ── */}
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Identifiants légaux</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="label">
+                  {t('settings.ninea')}
+                  <span className="text-gray-400 text-xs ml-1 font-normal">Numéro fiscal</span>
+                </label>
+                <input type="text" className="input-field font-mono" value={form.ninea}
+                  onChange={(e) => f('ninea', e.target.value)}
+                  placeholder="012345678 2A3" />
+              </div>
+              <div>
+                <label className="label">
+                  RCCM
+                  <span className="text-gray-400 text-xs ml-1 font-normal">Registre du Commerce</span>
+                </label>
+                <input type="text" className="input-field font-mono" value={form.rccm}
+                  onChange={(e) => f('rccm', e.target.value)}
+                  placeholder="SN-DKR-2023-B-12345" />
+              </div>
             </div>
-            <div>
-              <label className="label">{t('settings.email')}</label>
-              <input type="email" className="input-field" value={form.email}
-                onChange={(e) => f('email', e.target.value)}
-                placeholder="contact@entreprise.sn" />
-            </div>
-            <div>
-              <label className="label">{t('settings.website')}</label>
-              <input type="text" className="input-field" value={form.website}
-                onChange={(e) => f('website', e.target.value)}
-                placeholder="www.entreprise.sn" />
-            </div>
-            <div>
-              <label className="label">
-                {t('settings.ninea')}
-                <span className="text-gray-400 text-xs ml-1">(Numéro fiscal sénégalais)</span>
-              </label>
-              <input type="text" className="input-field font-mono" value={form.ninea}
-                onChange={(e) => f('ninea', e.target.value)}
-                placeholder="012345678 2A3" />
+          </div>
+
+          {/* ── Informations bancaires ── */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Informations bancaires</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="label">Nom de la banque</label>
+                <input type="text" className="input-field" value={form.bankName}
+                  onChange={(e) => f('bankName', e.target.value)}
+                  placeholder="CBAO, Ecobank, BIS..." />
+              </div>
+              <div>
+                <label className="label">Numéro de compte</label>
+                <input type="text" className="input-field font-mono" value={form.bankAccount}
+                  onChange={(e) => f('bankAccount', e.target.value)}
+                  placeholder="SN28 0100 1234 5678 9012 3456 789" />
+              </div>
             </div>
           </div>
         </div>

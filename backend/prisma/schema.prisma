@@ -199,6 +199,10 @@ model Settings {
   email           String?
   website         String?
   ninea           String? // NINEA sénégalais
+  activity        String? // Secteur d'activité (ex: Commerce Général Import-Export)
+  rccm            String? // Registre du Commerce et du Crédit Mobilier
+  bankName        String? @map("bank_name")    // Nom de la banque
+  bankAccount     String? @map("bank_account") // Numéro de compte bancaire
   defaultLanguage String  @default("fr") @map("default_language")
   defaultCurrency String  @default("XOF") @map("default_currency")
   defaultTvaRate  Float   @default(18) @map("default_tva_rate")

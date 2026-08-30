@@ -2,7 +2,8 @@ const { PrismaClient } = require('@prisma/client');
 const { z } = require('zod');
 const { AppError } = require('../middlewares/errorHandler');
 const { sendInvitationEmail } = require('../services/emailService');
-const { checkPlanLimit } = require('../utils/planLimits');
+const { checkPlanLimit, getEffectivePlan } = require('../utils/planLimits');
+const { getSubscriptionStatus } = require('../utils/subscriptionUtils');
 
 const prisma = new PrismaClient();
 
@@ -14,7 +15,17 @@ const getMyOrganization = async (req, res) => {
   const org = await prisma.organization.findUnique({
     where: { id: req.organizationId },
     include: {
-      settings: true,
+      // bankAccount et bankName exclus : données financières réservées à OWNER/ADMIN via /api/settings
+      settings: {
+        select: {
+          id: true, logoPath: true, signaturePath: true,
+          companyName: true, activity: true, address: true,
+          phone: true, email: true, website: true,
+          ninea: true, rccm: true,
+          defaultLanguage: true, defaultCurrency: true,
+          defaultTvaRate: true, documentStyle: true, primaryColor: true
+        }
+      },
       members: {
         include: { user: { select: { id: true, name: true, email: true, createdAt: true } } },
         orderBy: { createdAt: 'asc' }
@@ -24,7 +35,20 @@ const getMyOrganization = async (req, res) => {
   });
 
   if (!org) throw new AppError('Organisation non trouvée', 404);
-  res.json({ success: true, data: { organization: org } });
+
+  const effectivePlan = getEffectivePlan(org);
+  const subscriptionStatus = getSubscriptionStatus(org);
+
+  res.json({
+    success: true,
+    data: {
+      organization: {
+        ...org,
+        effectivePlan,      // plan réel appliqué (FREE si grâce écoulée)
+        subscriptionStatus  // free | active | expiring_soon | expired | legacy
+      }
+    }
+  });
 };
 
 // PATCH /api/organizations/me — Modifier le nom de l'organisation
@@ -215,6 +239,9 @@ const acceptInvite = async (req, res) => {
   if (existing) {
     return res.json({ success: true, message: 'Vous êtes déjà membre de cette organisation', data: { organization: org } });
   }
+
+  // Vérifier la limite membres au moment de l'acceptation (le plan peut avoir changé depuis l'invitation)
+  await checkPlanLimit(payload.orgId, 'member');
 
   await prisma.organizationMember.create({
     data: { organizationId: payload.orgId, userId: req.user.id, role: payload.role || 'MEMBER' }

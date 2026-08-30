@@ -6,12 +6,16 @@ const fs = require('fs');
 const prisma = new PrismaClient();
 
 const settingsSchema = z.object({
-  companyName: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email('Email invalide').optional().or(z.literal('')),
-  website: z.string().optional(),
-  ninea: z.string().optional(),
+  companyName: z.string().max(100).optional(),
+  activity:    z.string().max(150).optional(),
+  address:     z.string().max(300).optional(),
+  phone:       z.string().max(30).optional(),
+  email:       z.string().email('Email invalide').max(100).optional().or(z.literal('')),
+  website:     z.string().max(100).optional(),
+  ninea:       z.string().max(30).optional(),
+  rccm:        z.string().max(50).optional(),
+  bankName:    z.string().max(100).optional(),
+  bankAccount: z.string().max(60).optional(),
   defaultLanguage: z.enum(['fr', 'en']).default('fr'),
   defaultCurrency: z.enum(['XOF', 'EUR', 'USD']).default('XOF'),
   defaultTvaRate: z.coerce.number().min(0).max(100).default(18),
@@ -54,6 +58,15 @@ const updateSettings = async (req, res) => {
   res.json({ success: true, message: 'Paramètres mis à jour', data: { settings } });
 };
 
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
+
+function safeUnlink(storedPath) {
+  if (!storedPath) return;
+  const resolved = path.resolve(__dirname, '../../', storedPath);
+  if (!resolved.startsWith(UPLOADS_DIR + path.sep)) return;
+  if (fs.existsSync(resolved)) fs.unlinkSync(resolved);
+}
+
 // POST /api/settings/logo
 const uploadLogo = async (req, res) => {
   if (!req.file) {
@@ -61,10 +74,7 @@ const uploadLogo = async (req, res) => {
   }
 
   const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
-  if (existing?.logoPath) {
-    const oldPath = path.join(__dirname, '../../uploads', existing.logoPath.replace('/uploads/', ''));
-    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-  }
+  safeUnlink(existing?.logoPath);
 
   const logoPath = `/uploads/${req.file.filename}`;
   const settings = await prisma.settings.upsert({
@@ -83,10 +93,7 @@ const uploadSignature = async (req, res) => {
   }
 
   const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
-  if (existing?.signaturePath) {
-    const oldPath = path.join(__dirname, '../../uploads', existing.signaturePath.replace('/uploads/', ''));
-    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-  }
+  safeUnlink(existing?.signaturePath);
 
   const signaturePath = `/uploads/${req.file.filename}`;
   const settings = await prisma.settings.upsert({
@@ -101,10 +108,7 @@ const uploadSignature = async (req, res) => {
 // DELETE /api/settings/logo
 const deleteLogo = async (req, res) => {
   const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
-  if (existing?.logoPath) {
-    const filePath = path.join(__dirname, '../../', existing.logoPath);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  }
+  safeUnlink(existing?.logoPath);
   await prisma.settings.update({ where: { organizationId: req.organizationId }, data: { logoPath: null } });
   res.json({ success: true, message: 'Logo supprimé' });
 };
@@ -112,10 +116,7 @@ const deleteLogo = async (req, res) => {
 // DELETE /api/settings/signature
 const deleteSignature = async (req, res) => {
   const existing = await prisma.settings.findUnique({ where: { organizationId: req.organizationId } });
-  if (existing?.signaturePath) {
-    const filePath = path.join(__dirname, '../../', existing.signaturePath);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  }
+  safeUnlink(existing?.signaturePath);
   await prisma.settings.update({ where: { organizationId: req.organizationId }, data: { signaturePath: null } });
   res.json({ success: true, message: 'Signature supprimée' });
 };

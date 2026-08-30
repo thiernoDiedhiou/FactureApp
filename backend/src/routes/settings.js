@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { authenticate } = require('../middlewares/auth');
+const { authenticate, requireAdmin } = require('../middlewares/auth');
 const {
   getSettings, updateSettings, uploadLogo, uploadSignature,
   deleteLogo, deleteSignature
@@ -34,10 +34,11 @@ const upload = multer({
 router.use(authenticate);
 
 router.get('/', getSettings);
-router.put('/', updateSettings);
-router.post('/logo', upload.single('logo'), uploadLogo);
-router.post('/signature', upload.single('signature'), uploadSignature);
-router.delete('/logo', deleteLogo);
-router.delete('/signature', deleteSignature);
+// Écriture réservée aux OWNER et ADMIN
+router.put('/', requireAdmin, updateSettings);
+router.post('/logo', requireAdmin, upload.single('logo'), uploadLogo);
+router.post('/signature', requireAdmin, upload.single('signature'), uploadSignature);
+router.delete('/logo', requireAdmin, deleteLogo);
+router.delete('/signature', requireAdmin, deleteSignature);
 
 module.exports = router;
