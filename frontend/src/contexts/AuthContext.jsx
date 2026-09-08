@@ -14,9 +14,33 @@ export const AuthProvider = ({ children }) => {
     if (!token) { setLoading(false); return; }
     try {
       const { data } = await api.get('/auth/me');
-      setUser(data.data.user);
-      setOrganization(data.data.organization);
-      setOrganizations(data.data.organizations || []);
+      const userData = data.data.user;
+      const orgData = data.data.organization;
+      const orgsData = data.data.organizations || [];
+
+      // Restaurer la dernière organisation utilisée
+      const lastOrgId = localStorage.getItem('lastOrgId');
+      if (lastOrgId && orgsData.length > 1 && lastOrgId !== orgData?.id) {
+        const found = orgsData.find(o => o.id === lastOrgId);
+        if (found) {
+          try {
+            const res = await api.post('/organizations/switch', { organizationId: lastOrgId });
+            const { organization: lastOrg, orgRole, accessToken: newAT, refreshToken: newRT } = res.data.data;
+            localStorage.setItem('accessToken', newAT);
+            localStorage.setItem('refreshToken', newRT);
+            setUser({ ...userData, organizationId: lastOrgId, orgRole });
+            setOrganization(lastOrg);
+            setOrganizations(orgsData);
+            return;
+          } catch {
+            localStorage.removeItem('lastOrgId');
+          }
+        }
+      }
+
+      setUser(userData);
+      setOrganization(orgData);
+      setOrganizations(orgsData);
     } catch {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -63,6 +87,7 @@ export const AuthProvider = ({ children }) => {
     const { organization: orgData, orgRole, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('lastOrgId', organizationId); // Mémoriser pour la prochaine session
     setOrganization(orgData);
     setUser(prev => ({ ...prev, organizationId, orgRole }));
     return orgData;

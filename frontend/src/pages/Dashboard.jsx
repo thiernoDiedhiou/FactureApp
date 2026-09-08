@@ -14,6 +14,7 @@ import api from '../utils/api';
 import { formatDate, isOverdue } from '../utils/dateUtils';
 import { useSettings, useFormatCurrency } from '../contexts/SettingsContext';
 import OnboardingChecklist from '../components/OnboardingChecklist';
+import { SkeletonDashboard } from '../components/Skeleton';
 
 const STATUS_BADGES  = { paye: 'badge-paye', en_attente: 'badge-en_attente', annule: 'badge-annule' };
 const STATUS_LABELS  = { paye: 'Payé', en_attente: 'En attente', annule: 'Annulé' };
@@ -87,6 +88,7 @@ function PlanWidget({ organization }) {
       {(isFree || expired || expiringSoon) && (
         <Link
           to="/app/plans"
+          state={(expired || expiringSoon) ? { openRenewal: true } : undefined}
           className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors whitespace-nowrap"
         >
           <Zap className="w-4 h-4" />
@@ -187,13 +189,7 @@ export default function Dashboard() {
     load();
   }, [organization]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <SkeletonDashboard />;
 
   const { stats: s, recentDocuments = [], recentClients = [] } = stats || {};
 

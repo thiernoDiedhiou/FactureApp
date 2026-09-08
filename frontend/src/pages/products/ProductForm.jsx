@@ -98,8 +98,8 @@ export default function ProductForm() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <Link to="/app/products" className="btn-secondary px-3 py-2">
-          <ArrowLeft className="w-4 h-4" />
+        <Link to="/app/products" className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors -ml-2 flex-shrink-0">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="page-title">
           {isEdit ? t('products.edit') : t('products.new')}

@@ -68,55 +68,132 @@ ${settings?.email ? `Email: ${settings.email}` : ''}
 };
 
 /**
- * Envoie un email de notification d'invitation à rejoindre une organisation
+ * Envoie un email d'invitation à rejoindre une organisation
+ * Pour un nouveau compte : inclut les identifiants temporaires (isNewUser + tempEmail + tempPassword)
+ * Pour un compte existant : envoie un bouton de connexion directe
  */
-const sendInvitationEmail = async ({ to, inviteeName, organizationName, role, inviterName, inviteUrl }) => {
+const sendInvitationEmail = async ({
+  to, inviteeName, organizationName, role, inviterName, inviteUrl,
+  isNewUser = false, tempEmail, tempPassword
+}) => {
   const transporter = createTransporter();
   await transporter.verify();
 
   const roleLabel = role === 'ADMIN' ? 'Administrateur' : 'Membre';
-  const isNewUser = !inviteeName; // Pas encore de compte
+  const brandColor = '#00C8D7';
 
-  const greeting = isNewUser ? `Bonjour,` : `Bonjour ${inviteeName},`;
-  const actionText = isNewUser
-    ? `Cliquez sur le bouton ci-dessous pour créer votre compte et rejoindre l'organisation.`
-    : `Connectez-vous à votre compte CFActure pour accéder à cette organisation.`;
+  // ── Bloc identifiants (nouveaux utilisateurs seulement) ──
+  const credentialsHtml = isNewUser && tempEmail && tempPassword ? `
+  <tr>
+    <td style="padding:0 28px 24px;">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:18px 20px;">
+        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#15803d;">🔐 Vos identifiants de connexion</p>
+        <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:7px 0;font-size:13px;color:#374151;width:38%;font-weight:600;">Email :</td>
+            <td style="padding:7px 0;font-size:13px;color:#111;font-family:monospace,monospace;">${tempEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;font-size:13px;color:#374151;font-weight:600;">Mot de passe :</td>
+            <td style="padding:7px 0;font-size:16px;font-weight:800;color:#111;font-family:monospace,monospace;letter-spacing:2px;">${tempPassword}</td>
+          </tr>
+        </table>
+        <p style="margin:14px 0 0;font-size:11px;color:#166534;line-height:1.5;">
+          ⚠️ Nous vous recommandons de changer votre mot de passe dès votre première connexion<br>
+          (Paramètres → Changer le mot de passe).
+        </p>
+      </div>
+    </td>
+  </tr>` : '';
 
-  const text = `${greeting}
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Invitation — CFActure</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 12px;">
+<tr><td>
+<table width="560" align="center" cellpadding="0" cellspacing="0"
+       style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.09);">
+
+  <!-- En-tête -->
+  <tr>
+    <td style="background:${brandColor};padding:28px 28px 22px;">
+      <div style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">CFActure</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.85);margin-top:5px;">Invitation à rejoindre une organisation</div>
+    </td>
+  </tr>
+
+  <!-- Corps -->
+  <tr>
+    <td style="padding:28px 28px 20px;">
+      <p style="margin:0 0 16px;font-size:16px;">Bonjour <strong>${inviteeName || 'cher(e) utilisateur(trice)'}</strong>,</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.65;">
+        <strong>${inviterName}</strong> vous invite à rejoindre l'organisation
+        <strong>&ldquo;${organizationName}&rdquo;</strong> sur CFActure en tant que <strong>${roleLabel}</strong>.
+      </p>
+      <p style="margin:0 0 4px;font-size:14px;color:#6b7280;line-height:1.6;">
+        ${isNewUser
+          ? 'Un compte a été créé automatiquement pour vous. Utilisez les identifiants ci-dessous pour vous connecter.'
+          : 'Connectez-vous à votre compte CFActure pour accéder à cette organisation.'}
+      </p>
+    </td>
+  </tr>
+
+  <!-- Identifiants (nouveau compte uniquement) -->
+  ${credentialsHtml}
+
+  <!-- Bouton CTA -->
+  <tr>
+    <td style="padding:0 28px 28px;text-align:center;">
+      <a href="${inviteUrl || 'http://localhost:3000/login'}"
+         style="display:inline-block;background:${brandColor};color:#ffffff;padding:15px 40px;
+                border-radius:9px;text-decoration:none;font-weight:700;font-size:15px;
+                letter-spacing:0.3px;">
+        Se connecter à CFActure &rarr;
+      </a>
+    </td>
+  </tr>
+
+  <!-- Séparateur -->
+  <tr>
+    <td style="padding:0 28px;">
+      <div style="border-top:1px solid #e5e7eb;"></div>
+    </td>
+  </tr>
+
+  <!-- Pied de page -->
+  <tr>
+    <td style="padding:18px 28px;text-align:center;color:#9ca3af;font-size:11px;line-height:1.8;">
+      <div style="font-weight:600;color:#6b7280;margin-bottom:3px;">CFActure &mdash; Facturation XOF &middot; Zone UEMOA</div>
+      <div>Si vous n&rsquo;attendiez pas cette invitation, vous pouvez ignorer cet email.</div>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  const text = `Bonjour ${inviteeName || ''},
 
 ${inviterName} vous invite à rejoindre l'organisation "${organizationName}" sur CFActure en tant que ${roleLabel}.
 
-${actionText}
-${inviteUrl ? `\nLien d'invitation : ${inviteUrl}` : ''}
+${isNewUser && tempEmail && tempPassword ? `Vos identifiants de connexion :
+  Email       : ${tempEmail}
+  Mot de passe : ${tempPassword}
+
+Nous vous recommandons de changer votre mot de passe dès votre première connexion.
+
+` : ''}Se connecter : ${inviteUrl || ''}
 
 Cordialement,
 L'équipe CFActure`.trim();
-
-  const html = `
-<div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; color: #1f2937;">
-  <div style="background: #0EA5E9; padding: 28px 32px; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 22px;">CFActure</h1>
-    <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 14px;">Invitation à rejoindre une organisation</p>
-  </div>
-  <div style="background: #f9fafb; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-    <p style="font-size: 16px; margin: 0 0 16px;">${greeting}</p>
-    <p style="font-size: 15px; color: #374151; margin: 0 0 8px;">
-      <strong>${inviterName}</strong> vous invite à rejoindre l'organisation
-      <strong>"${organizationName}"</strong> en tant que <strong>${roleLabel}</strong>.
-    </p>
-    <p style="font-size: 14px; color: #6b7280; margin: 0 0 28px;">${actionText}</p>
-    ${inviteUrl ? `
-    <div style="text-align: center; margin: 0 0 24px;">
-      <a href="${inviteUrl}"
-         style="display: inline-block; background: #0EA5E9; color: white; padding: 14px 32px;
-                border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px;">
-        Rejoindre l'organisation
-      </a>
-    </div>
-    <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">Ce lien est valable 7 jours.</p>
-    ` : ''}
-  </div>
-</div>`.trim();
 
   await transporter.sendMail({
     from: process.env.EMAIL_FROM || process.env.SMTP_USER,

@@ -5,12 +5,14 @@ import toast from 'react-hot-toast';
 import {
   Plus, Search, Eye, Edit, Trash2, Download,
   FileText, ChevronLeft, ChevronRight, Copy, FileDown, X,
-  AlertTriangle, Calendar
+  AlertTriangle, Calendar, MoreVertical, Loader2
 } from 'lucide-react';
 import api from '../../utils/api';
 import { formatDate, isOverdue } from '../../utils/dateUtils';
 import { useFormatCurrency } from '../../contexts/SettingsContext';
 import { exportXLSX } from '../../utils/exportUtils';
+import { SkeletonDocCard, SkeletonDocTableRow } from '../../components/Skeleton';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const STATUS_BADGES  = { paye: 'badge-paye', en_attente: 'badge-en_attente', annule: 'badge-annule' };
 const STATUS_LABELS  = { paye: 'Payé', en_attente: 'En attente', annule: 'Annulé' };
@@ -32,13 +34,26 @@ export default function DocumentList() {
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
-  const [deleteId, setDeleteId] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searching, setSearching] = useState(false);
+  const { confirm } = useConfirm();
+
+  useEffect(() => {
+    setSearching(search.length > 0);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const loadDocs = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/documents', {
-        params: { search, type, status, page, limit: 10 }
+        params: { search: debouncedSearch, type, status, page, limit: 10 }
       });
       setDocs(data.data.documents);
       setPagination(data.data.pagination);
@@ -47,19 +62,24 @@ export default function DocumentList() {
     } finally {
       setLoading(false);
     }
-  }, [search, type, status, page]);
+  }, [debouncedSearch, type, status, page]);
 
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
   const handleDelete = async (id) => {
+    const ok = await confirm({
+      title: 'Supprimer ce document ?',
+      message: 'Cette action est irréversible.',
+      danger: true,
+      confirmLabel: 'Supprimer',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/documents/${id}`);
       toast.success(t('documents.deleted'));
       loadDocs();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur suppression');
-    } finally {
-      setDeleteId(null);
     }
   };
 
@@ -113,7 +133,7 @@ export default function DocumentList() {
     }
   };
 
-  const clearSearch = () => { setSearch(''); setPage(1); };
+  const clearSearch = () => { setSearch(''); setDebouncedSearch(''); setPage(1); setSearching(false); };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -142,8 +162,8 @@ export default function DocumentList() {
         </div>
       </div>
 
-      {/* Filtres — une seule ligne */}
-      <div className="flex items-center gap-2">
+      {/* Filtres */}
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -151,53 +171,82 @@ export default function DocumentList() {
             placeholder="Rechercher…"
             className={`input-field pl-9 w-full ${search ? 'pr-9' : ''}`}
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => setSearch(e.target.value)}
           />
-          {search && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
+          {searching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+          )}
+          {!searching && search && (
+            <button onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
-        <select className="input-field w-auto flex-shrink-0 text-sm" value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
-          <option value="">Type</option>
-          <option value="facture">Factures</option>
-          <option value="devis">Devis</option>
-          <option value="proforma">Proforma</option>
-        </select>
-        <select className="input-field w-auto flex-shrink-0 text-sm" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-          <option value="">Statut</option>
-          <option value="en_attente">En attente</option>
-          <option value="paye">Payé</option>
-          <option value="annule">Annulé</option>
-        </select>
+        <div className="flex gap-2">
+          <select className="input-field flex-1 sm:flex-none sm:w-auto text-sm" value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
+            <option value="">Type</option>
+            <option value="facture">Factures</option>
+            <option value="devis">Devis</option>
+            <option value="proforma">Proforma</option>
+          </select>
+          <select className="input-field flex-1 sm:flex-none sm:w-auto text-sm" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+            <option value="">Statut</option>
+            <option value="en_attente">En attente</option>
+            <option value="paye">Payé</option>
+            <option value="annule">Annulé</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <>
+          <div className="sm:hidden space-y-3">
+            {[...Array(4)].map((_, i) => <SkeletonDocCard key={i} />)}
+          </div>
+          <div className="hidden sm:block card overflow-hidden">
+            <table className="w-full">
+              <tbody className="divide-y divide-gray-100">
+                {[...Array(6)].map((_, i) => <SkeletonDocTableRow key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : docs.length === 0 ? (
-        <div className="card text-center py-16">
-          <FileText className="w-16 h-16 mx-auto text-gray-200 mb-4" />
-          <p className="text-gray-500 font-medium">{t('documents.noDocuments')}</p>
-          <Link to="/app/documents/new" className="btn-primary mt-4 inline-flex">
-            <Plus className="w-4 h-4" /> {t('documents.new')}
-          </Link>
+        <div className="card text-center py-16 px-8">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-primary-50 flex items-center justify-center">
+            <FileText className="w-10 h-10 text-primary-300" />
+          </div>
+          {(search || type || status) ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun résultat</h3>
+              <p className="text-sm text-gray-400 mb-5">Aucun document ne correspond à votre recherche.</p>
+              <button onClick={() => { setSearch(''); setType(''); setStatus(''); }} className="btn-secondary">
+                Effacer les filtres
+              </button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun document pour l'instant</h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto">
+                Créez votre première facture, devis ou proforma en quelques clics.
+              </p>
+              <Link to="/app/documents/new" className="btn-primary inline-flex">
+                <Plus className="w-4 h-4" /> Créer un document
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <>
           {/* ── Vue mobile : cards ── */}
           <div className="sm:hidden space-y-3">
-            {docs.map(doc => {
+            {docs.map((doc, idx) => {
               const overdue = doc.type === 'facture' && doc.status === 'en_attente' && isOverdue(doc.dueDate);
               return (
                 <div
                   key={doc.id}
-                  className={`bg-white rounded-2xl border shadow-sm p-4 space-y-3 ${overdue ? 'border-red-200 bg-red-50/20' : 'border-gray-100'}`}
+                  className={`bg-white rounded-2xl border shadow-sm p-4 space-y-3 animate-fade-up stagger-${Math.min(idx + 1, 6)} ${overdue ? 'border-red-200 bg-red-50/20' : 'border-gray-100'}`}
                 >
                   {/* Ligne 1 : numéro + type + statut */}
                   <div className="flex items-start justify-between gap-2">
@@ -217,7 +266,7 @@ export default function DocumentList() {
                         </span>
                       )}
                     </div>
-                    <span className={STATUS_BADGES[doc.status]}>
+                    <span className={`${STATUS_BADGES[doc.status]} whitespace-nowrap`}>
                       {STATUS_LABELS[doc.status]}
                     </span>
                   </div>
@@ -247,36 +296,38 @@ export default function DocumentList() {
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-x-3 gap-y-2 flex-wrap">
-                      <Link to={`/app/documents/${doc.id}`}
-                        className="flex items-center gap-1.5 text-xs font-medium text-primary-600">
-                        <Eye className="w-3.5 h-3.5" /> Voir
-                      </Link>
-                      <Link to={`/app/documents/${doc.id}/edit`}
-                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                        <Edit className="w-3.5 h-3.5" /> Modifier
-                      </Link>
-                      <button onClick={() => handleDownloadPDF(doc)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-green-600">
-                        <Download className="w-3.5 h-3.5" /> PDF
+                  <div className="pt-2 border-t border-gray-100 flex items-center gap-2">
+                    <Link to={`/app/documents/${doc.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-xs font-semibold text-primary-700">
+                      <Eye className="w-3.5 h-3.5" /> Voir
+                    </Link>
+                    <button onClick={() => handleDownloadPDF(doc)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-50 text-xs font-semibold text-green-700">
+                      <Download className="w-3.5 h-3.5" /> PDF
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenMenuId(openMenuId === doc.id ? null : doc.id)}
+                        className="p-1.5 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDuplicate(doc.id)}
-                        className="flex items-center gap-1.5 text-xs font-medium text-purple-600">
-                        <Copy className="w-3.5 h-3.5" /> Dupliquer
-                      </button>
-                      {deleteId === doc.id ? (
-                        <div className="flex gap-1 ml-auto">
-                          <button onClick={() => handleDelete(doc.id)}
-                            className="px-2.5 py-1 text-xs bg-red-600 text-white rounded-lg">Oui</button>
-                          <button onClick={() => setDeleteId(null)}
-                            className="px-2.5 py-1 text-xs bg-gray-200 rounded-lg">Non</button>
+                      {openMenuId === doc.id && (
+                        <div className="absolute right-0 bottom-full mb-1 w-40 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden">
+                          <Link to={`/app/documents/${doc.id}/edit`}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setOpenMenuId(null)}>
+                            <Edit className="w-3.5 h-3.5" /> Modifier
+                          </Link>
+                          <button onClick={() => { handleDuplicate(doc.id); setOpenMenuId(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <Copy className="w-3.5 h-3.5" /> Dupliquer
+                          </button>
+                          <button onClick={() => { handleDelete(doc.id); setOpenMenuId(null); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50">
+                            <Trash2 className="w-3.5 h-3.5" /> Supprimer
+                          </button>
                         </div>
-                      ) : (
-                        <button onClick={() => setDeleteId(doc.id)}
-                          className="flex items-center gap-1.5 text-xs font-medium text-red-500 ml-auto">
-                          <Trash2 className="w-3.5 h-3.5" /> Supprimer
-                        </button>
                       )}
                     </div>
                   </div>
@@ -305,7 +356,12 @@ export default function DocumentList() {
                   {docs.map(doc => {
                     const overdue = doc.type === 'facture' && doc.status === 'en_attente' && isOverdue(doc.dueDate);
                     return (
-                      <tr key={doc.id} className={`hover:bg-gray-50 transition-colors ${overdue ? 'bg-red-50/30' : ''}`}>
+                      <tr key={doc.id} className={`transition-colors ${
+                        overdue ? 'bg-red-50/40 hover:bg-red-50/60' :
+                        doc.status === 'paye' ? 'bg-green-50/30 hover:bg-green-50/50' :
+                        doc.status === 'annule' ? 'bg-gray-50/60 hover:bg-gray-100/60' :
+                        'hover:bg-gray-50'
+                      }`}>
                         <td className="px-4 py-3">
                           <Link to={`/app/documents/${doc.id}`} className="font-medium text-primary-600 text-sm hover:underline">
                             {doc.number}
@@ -350,19 +406,10 @@ export default function DocumentList() {
                               className="p-1.5 rounded hover:bg-purple-50 hover:text-purple-600 text-gray-400" title="Dupliquer">
                               <Copy className="w-4 h-4" />
                             </button>
-                            {deleteId === doc.id ? (
-                              <div className="flex gap-1">
-                                <button onClick={() => handleDelete(doc.id)}
-                                  className="px-2 py-1 text-xs bg-red-600 text-white rounded">Oui</button>
-                                <button onClick={() => setDeleteId(null)}
-                                  className="px-2 py-1 text-xs bg-gray-200 rounded">Non</button>
-                              </div>
-                            ) : (
-                              <button onClick={() => setDeleteId(doc.id)}
-                                className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-gray-400" title="Supprimer">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                            <button onClick={() => handleDelete(doc.id)}
+                              className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-gray-400" title="Supprimer">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>

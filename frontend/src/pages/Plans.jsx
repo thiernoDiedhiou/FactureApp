@@ -385,7 +385,11 @@ export default function Plans() {
               : <><strong>Expire dans {daysRemaining} jour{daysRemaining > 1 ? 's' : ''}</strong> — Renouvelez maintenant pour ne pas perdre l'accès.</>
             }
           </span>
-          <button onClick={handleModify} className="text-xs font-semibold underline whitespace-nowrap">Renouveler →</button>
+          <button
+            onClick={() => subscriptionStatus === 'expired' ? openUpgrade(currentPlanData, true) : handleModify()}
+            className="text-xs font-semibold underline whitespace-nowrap">
+            Renouveler →
+          </button>
         </div>
       )}
 

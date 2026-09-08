@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Save, Loader2, Plus, Trash2, Search,
-  Package, ChevronDown, X
+  Package, ChevronDown, X, ChevronLeft, ChevronRight, Check
 } from 'lucide-react';
 import api from '../../utils/api';
 import { handleFormError } from '../../utils/formErrors';
@@ -44,7 +44,55 @@ export default function DocumentForm() {
   const [showProductSearch, setShowProductSearch] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [mobileStep, setMobileStep] = useState(1);
   const priceRefs = useRef({});
+
+  const STEPS = [
+    { id: 1, label: 'Infos & Client' },
+    { id: 2, label: 'Articles' },
+    { id: 3, label: 'Résumé' }
+  ];
+
+  const validateStep1 = () => {
+    const errs = {};
+    if (!form.clientId) errs.clientId = 'Client requis';
+    if (!form.issuedDate) errs.issuedDate = "Date d'émission requise";
+    if (form.dueDate && form.issuedDate && form.dueDate < form.issuedDate)
+      errs.dueDate = "La date d'échéance doit être postérieure à la date d'émission";
+    return errs;
+  };
+
+  const validateStep2 = () => {
+    const errs = {};
+    if (items.length === 0) errs.items = 'Au moins une ligne requise';
+    items.forEach((item, i) => {
+      if (!item.description) errs[`item_${i}_desc`] = 'Description requise';
+      if (!item.unitPrice || parseFloat(item.unitPrice) < 0) errs[`item_${i}_price`] = 'Prix invalide';
+      if (!item.quantity || parseFloat(item.quantity) <= 0) errs[`item_${i}_qty`] = 'Quantité invalide';
+      const tva = parseFloat(String(item.tvaRate).trim());
+      if (isNaN(tva) || tva < 0 || tva > 100) errs[`item_${i}_tva`] = 'TVA invalide';
+    });
+    return errs;
+  };
+
+  const nextStep = () => {
+    let errs = {};
+    if (mobileStep === 1) errs = validateStep1();
+    else if (mobileStep === 2) errs = validateStep2();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      toast.error('Veuillez corriger les erreurs');
+      return;
+    }
+    setErrors({});
+    setMobileStep(s => Math.min(s + 1, 3));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const prevStep = () => {
+    setMobileStep(s => Math.max(s - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Sync TVA par défaut au chargement des settings (nouveau document uniquement)
   useEffect(() => {
@@ -228,18 +276,41 @@ export default function DocumentForm() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link to="/app/documents" className="btn-secondary px-3 py-2">
-          <ArrowLeft className="w-4 h-4" />
+      <div className="flex items-center gap-2">
+        <Link to="/app/documents" className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors -ml-2 flex-shrink-0">
+          <ArrowLeft className="w-5 h-5" />
         </Link>
         <h1 className="page-title">
           {isEdit ? 'Modifier le document' : 'Nouveau document'}
         </h1>
       </div>
 
+      {/* Indicateur d'étapes — mobile uniquement */}
+      <div className="sm:hidden flex items-center gap-0">
+        {STEPS.map((step, i) => (
+          <div key={step.id} className="flex items-center flex-1">
+            <div className="flex flex-col items-center flex-1">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
+                mobileStep === step.id ? 'border-primary-600 bg-primary-600 text-white' :
+                mobileStep > step.id ? 'border-green-500 bg-green-500 text-white' :
+                'border-gray-200 bg-white text-gray-400'
+              }`}>
+                {mobileStep > step.id ? <Check className="w-4 h-4" /> : step.id}
+              </div>
+              <span className={`text-xs mt-1 font-medium ${mobileStep === step.id ? 'text-primary-600' : mobileStep > step.id ? 'text-green-600' : 'text-gray-400'}`}>
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div className={`h-0.5 flex-1 mt-[-14px] ${mobileStep > step.id ? 'bg-green-400' : 'bg-gray-200'}`} />
+            )}
+          </div>
+        ))}
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Document info */}
-        <div className="card p-6">
+        {/* Document info — Étape 1 mobile */}
+        <div className={`card p-6 ${mobileStep !== 1 ? 'hidden sm:block' : ''}`}>
           <h2 className="section-title mb-4">Informations du document</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -281,8 +352,8 @@ export default function DocumentForm() {
           </div>
         </div>
 
-        {/* Client selection */}
-        <div className="card p-6">
+        {/* Client selection — Étape 1 mobile */}
+        <div className={`card p-6 ${mobileStep !== 1 ? 'hidden sm:block' : ''}`}>
           <h2 className="section-title mb-4">Client <span className="text-red-500">*</span></h2>
           {errors.clientId && <p className="text-red-500 text-xs mb-2">{errors.clientId}</p>}
 
@@ -341,8 +412,8 @@ export default function DocumentForm() {
           )}
         </div>
 
-        {/* Line items */}
-        <div className="card p-6">
+        {/* Line items — Étape 2 mobile */}
+        <div className={`card p-6 ${mobileStep !== 2 ? 'hidden sm:block' : ''}`}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">{t('documents.items')}</h2>
             <button type="button" onClick={addItem} className="btn-secondary text-sm px-3 py-1.5">
@@ -507,37 +578,32 @@ export default function DocumentForm() {
             })}
           </div>
 
-          {/* Discount and totals */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <label className="label">Remise globale (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  className={`input-field max-w-xs ${errors.discount ? 'border-red-500' : ''}`}
-                  value={form.discount}
-                  onChange={(e) => {
-                    setForm(f => ({ ...f, discount: e.target.value }));
-                    setErrors(prev => ({ ...prev, discount: undefined }));
-                  }}
-                />
-                {errors.discount && <p className="text-red-500 text-xs mt-1">{errors.discount}</p>}
-              </div>
-              <div>
-                <label className="label">Notes / Conditions de paiement</label>
-                <textarea
-                  className="input-field resize-none"
-                  rows={3}
-                  value={form.notes}
-                  onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Paiement sous 30 jours par virement bancaire..."
-                />
-              </div>
-            </div>
+          {/* Remise — desktop dans la même card, mobile masqué ici */}
+          <div className={`mt-6 hidden md:block`}>
+            <label className="label">Remise globale (%)</label>
+            <input
+              type="number" min="0" max="100"
+              className={`input-field max-w-xs ${errors.discount ? 'border-red-500' : ''}`}
+              value={form.discount}
+              onChange={(e) => { setForm(f => ({ ...f, discount: e.target.value })); setErrors(prev => ({ ...prev, discount: undefined })); }}
+            />
+            {errors.discount && <p className="text-red-500 text-xs mt-1">{errors.discount}</p>}
+          </div>
+        </div>
 
-            {/* Totals block */}
+        {/* Desktop totals row */}
+        <div className="hidden md:block card p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="label">Notes / Conditions de paiement</label>
+              <textarea
+                className="input-field resize-none"
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Paiement sous 30 jours par virement bancaire..."
+              />
+            </div>
             <div className="bg-gray-50 rounded-xl p-5 space-y-3 self-start">
               {parseFloat(form.discount) > 0 && (
                 <div className="flex justify-between text-sm">
@@ -561,13 +627,83 @@ export default function DocumentForm() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
+        {/* Étape 3 mobile : Résumé + Notes + Remise */}
+        <div className={`space-y-4 sm:hidden ${mobileStep !== 3 ? 'hidden' : ''}`}>
+          {/* Récapitulatif totaux */}
+          <div className="card p-5 space-y-3">
+            <h2 className="section-title">Récapitulatif</h2>
+            {parseFloat(form.discount) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Remise ({form.discount}%)</span>
+                <span className="text-red-600">-{formatAmount(totals.discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Total HT</span>
+              <span className="font-medium">{formatAmount(totals.totalHt)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">TVA</span>
+              <span className="font-medium">{formatAmount(totals.totalTva)}</span>
+            </div>
+            <div className="flex justify-between text-xl font-bold border-t border-gray-200 pt-3">
+              <span>Total TTC</span>
+              <span className="text-primary-600">{formatAmount(totals.totalTtc)}</span>
+            </div>
+          </div>
+          {/* Remise + Notes */}
+          <div className="card p-5 space-y-4">
+            <div>
+              <label className="label">Remise globale (%)</label>
+              <input
+                type="number" min="0" max="100"
+                className={`input-field ${errors.discount ? 'border-red-500' : ''}`}
+                value={form.discount}
+                onChange={(e) => { setForm(f => ({ ...f, discount: e.target.value })); setErrors(prev => ({ ...prev, discount: undefined })); }}
+              />
+              {errors.discount && <p className="text-red-500 text-xs mt-1">{errors.discount}</p>}
+            </div>
+            <div>
+              <label className="label">Notes / Conditions de paiement</label>
+              <textarea
+                className="input-field resize-none"
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Paiement sous 30 jours par virement bancaire..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Actions desktop */}
+        <div className="hidden sm:flex items-center justify-end gap-3">
           <Link to="/app/documents" className="btn-secondary">{t('common.cancel')}</Link>
           <button type="submit" className="btn-primary px-6" disabled={loading}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isEdit ? 'Mettre à jour' : 'Créer le document'}
           </button>
+        </div>
+
+        {/* Actions mobile — navigation par étapes */}
+        <div className="sm:hidden flex gap-3">
+          {mobileStep > 1 ? (
+            <button type="button" onClick={prevStep} className="btn-secondary flex-1 justify-center">
+              <ChevronLeft className="w-4 h-4" /> Précédent
+            </button>
+          ) : (
+            <Link to="/app/documents" className="btn-secondary flex-1 justify-center">Annuler</Link>
+          )}
+          {mobileStep < 3 ? (
+            <button type="button" onClick={nextStep} className="btn-primary flex-1 justify-center">
+              Suivant <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button type="submit" className="btn-primary flex-1 justify-center" disabled={loading}>
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isEdit ? 'Mettre à jour' : 'Créer'}
+            </button>
+          )}
         </div>
       </form>
     </div>

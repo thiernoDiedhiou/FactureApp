@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import BottomNav from './BottomNav';
@@ -71,7 +71,15 @@ function SubscriptionBanner({ organization }) {
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { organization } = useAuth();
+  const { organization, user } = useAuth();
+
+  const location = useLocation();
+  const myMembership = organization?.members?.find(
+    m => (m.userId ?? m.user?.id) === user?.id
+  );
+  const myRole = myMembership?.role ?? user?.orgRole;
+  const isOwnerOrAdmin = ['OWNER', 'ADMIN'].includes(myRole);
+  const isPlansPage = location.pathname === '/app/plans';
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -96,9 +104,11 @@ export default function Layout() {
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <OfflineBanner />
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <SubscriptionBanner organization={organization} />
+        {isOwnerOrAdmin && !isPlansPage && <SubscriptionBanner organization={organization} />}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 lg:pb-8">
-          <Outlet />
+          <div key={location.key} className="animate-fade-up">
+            <Outlet />
+          </div>
         </main>
         <BottomNav onMenuClick={() => setSidebarOpen(true)} />
       </div>

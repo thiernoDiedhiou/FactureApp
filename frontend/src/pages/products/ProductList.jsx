@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Plus, Search, Edit, Trash2, Package, Tag } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Tag, Loader2, X } from 'lucide-react';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import api from '../../utils/api';
 import { useFormatCurrency } from '../../contexts/SettingsContext';
+import { SkeletonProductCard } from '../../components/Skeleton';
 
 export default function ProductList() {
   const { t } = useTranslation();
@@ -14,13 +16,24 @@ export default function ProductList() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState([]);
-  const [deleteId, setDeleteId] = useState(null);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searching, setSearching] = useState(false);
+  const { confirm } = useConfirm();
+
+  useEffect(() => {
+    setSearching(search.length > 0);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [prodRes, catRes] = await Promise.all([
-        api.get('/products', { params: { search, category, limit: 50 } }),
+        api.get('/products', { params: { search: debouncedSearch, category, limit: 50 } }),
         api.get('/products/categories')
       ]);
       setProducts(prodRes.data.data.products);
@@ -30,19 +43,24 @@ export default function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, [debouncedSearch, category]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
   const handleDelete = async (id) => {
+    const ok = await confirm({
+      title: 'Supprimer ce produit ?',
+      message: 'Cette action est irréversible.',
+      danger: true,
+      confirmLabel: 'Supprimer',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/products/${id}`);
       toast.success(t('products.deleted'));
       loadData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur suppression');
-    } finally {
-      setDeleteId(null);
     }
   };
 
@@ -67,10 +85,21 @@ export default function ProductList() {
           <input
             type="text"
             placeholder={t('products.search')}
-            className="input-field pl-9"
+            className={`input-field pl-9 ${search ? 'pr-9' : ''}`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          {searching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+          )}
+          {!searching && search && (
+            <button
+              onClick={() => { setSearch(''); setDebouncedSearch(''); setSearching(false); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         {categories.length > 0 && (
           <select
@@ -88,21 +117,36 @@ export default function ProductList() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => <SkeletonProductCard key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <div className="card text-center py-16">
-          <Package className="w-16 h-16 mx-auto text-gray-200 mb-4" />
-          <p className="text-gray-500 font-medium">{t('products.noProducts')}</p>
-          <Link to="/app/products/new" className="btn-primary mt-4 inline-flex">
-            <Plus className="w-4 h-4" /> {t('products.new')}
-          </Link>
+        <div className="card text-center py-16 px-8">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-primary-50 flex items-center justify-center">
+            <Package className="w-10 h-10 text-primary-300" />
+          </div>
+          {(search || category) ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun résultat</h3>
+              <p className="text-sm text-gray-400 mb-5">Aucun produit ne correspond à votre recherche.</p>
+              <button onClick={() => { setSearch(''); setCategory(''); }} className="btn-secondary">Effacer les filtres</button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun produit / service</h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto">
+                Créez votre catalogue pour gagner du temps lors de la facturation.
+              </p>
+              <Link to="/app/products/new" className="btn-primary inline-flex">
+                <Plus className="w-4 h-4" /> Ajouter un produit
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {products.map(product => (
-            <div key={product.id} className="card p-5 hover:shadow-md transition-shadow group">
+          {products.map((product, idx) => (
+            <div key={product.id} className={`card p-5 hover:shadow-md transition-shadow group animate-fade-up stagger-${Math.min(idx + 1, 6)}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center">
                   <Package className="w-5 h-5 text-primary-600" />
@@ -112,19 +156,10 @@ export default function ProductList() {
                     className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-primary-600">
                     <Edit className="w-4 h-4" />
                   </Link>
-                  {deleteId === product.id ? (
-                    <>
-                      <button onClick={() => handleDelete(product.id)}
-                        className="px-2 py-1 text-xs bg-red-600 text-white rounded">Oui</button>
-                      <button onClick={() => setDeleteId(null)}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded">Non</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setDeleteId(product.id)}
-                      className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button onClick={() => handleDelete(product.id)}
+                    className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 

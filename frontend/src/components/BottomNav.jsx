@@ -12,7 +12,7 @@ const CREATE_OPTIONS = [
   { label: 'Nouveau client',    href: '/app/clients/new',              icon: UserPlus,  color: 'text-green-600'  },
 ];
 
-const TAB_CLASS      = 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2';
+const TAB_CLASS      = 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative';
 const ACTIVE_CLASS   = 'text-primary-600';
 const INACTIVE_CLASS = 'text-gray-400';
 
@@ -80,22 +80,29 @@ export default function BottomNav({ onMenuClick }) {
         <div className="flex items-center h-16">
 
           {/* Accueil */}
-          <NavLink
-            to="/app"
-            end
-            className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}
-          >
-            <LayoutDashboard className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Accueil</span>
+          <NavLink to="/app" end className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}>
+            {({ isActive }) => (
+              <>
+                {isActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary-500" />}
+                <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-primary-50' : ''}`}>
+                  <LayoutDashboard className="w-5 h-5" />
+                </div>
+                <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>Accueil</span>
+              </>
+            )}
           </NavLink>
 
           {/* Documents */}
-          <NavLink
-            to="/app/documents"
-            className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}
-          >
-            <FileText className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Documents</span>
+          <NavLink to="/app/documents" className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}>
+            {({ isActive }) => (
+              <>
+                {isActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary-500" />}
+                <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-primary-50' : ''}`}>
+                  <FileText className="w-5 h-5" />
+                </div>
+                <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>Documents</span>
+              </>
+            )}
           </NavLink>
 
           {/* Bouton + central (FAB) */}
@@ -114,20 +121,23 @@ export default function BottomNav({ onMenuClick }) {
           </div>
 
           {/* Clients */}
-          <NavLink
-            to="/app/clients"
-            className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}
-          >
-            <Users className="w-6 h-6" />
-            <span className="text-[10px] font-medium">Clients</span>
+          <NavLink to="/app/clients" className={({ isActive }) => `${TAB_CLASS} ${isActive ? ACTIVE_CLASS : INACTIVE_CLASS}`}>
+            {({ isActive }) => (
+              <>
+                {isActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary-500" />}
+                <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-primary-50' : ''}`}>
+                  <Users className="w-5 h-5" />
+                </div>
+                <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>Clients</span>
+              </>
+            )}
           </NavLink>
 
           {/* Menu (ouvre la sidebar) */}
-          <button
-            onClick={onMenuClick}
-            className={`${TAB_CLASS} ${INACTIVE_CLASS} hover:text-gray-600 active:text-gray-600`}
-          >
-            <Menu className="w-6 h-6" />
+          <button onClick={onMenuClick} className={`${TAB_CLASS} ${INACTIVE_CLASS} hover:text-gray-600`}>
+            <div className="p-1.5 rounded-xl">
+              <Menu className="w-5 h-5" />
+            </div>
             <span className="text-[10px] font-medium">Menu</span>
           </button>
 

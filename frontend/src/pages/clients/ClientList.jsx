@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import api from '../../utils/api';
 import { exportXLSX, exportCSV } from '../../utils/exportUtils';
+import { SkeletonClientCard } from '../../components/Skeleton';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 const CSV_TEMPLATE_HEADERS = ['nom', 'entreprise', 'email', 'telephone', 'adresse', 'ninea'];
 const CSV_TEMPLATE_EXAMPLE = ['Moussa Diop', 'Entreprise Diop SARL', 'moussa@exemple.sn', '+221771234567', '12 rue des Fleurs Dakar', 'SN2024001234'];
@@ -125,13 +127,25 @@ export default function ClientList() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
-  const [deleteId, setDeleteId] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searching, setSearching] = useState(false);
+  const { confirm } = useConfirm();
+
+  useEffect(() => {
+    setSearching(search.length > 0);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+      setSearching(false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const loadClients = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/clients', { params: { search, page, limit: 10 } });
+      const { data } = await api.get('/clients', { params: { search: debouncedSearch, page, limit: 10 } });
       setClients(data.data.clients);
       setPagination(data.data.pagination);
     } catch {
@@ -139,19 +153,24 @@ export default function ClientList() {
     } finally {
       setLoading(false);
     }
-  }, [search, page]);
+  }, [debouncedSearch, page]);
 
   useEffect(() => { loadClients(); }, [loadClients]);
 
   const handleDelete = async (id) => {
+    const ok = await confirm({
+      title: 'Supprimer ce client ?',
+      message: 'Cette action est irréversible.',
+      danger: true,
+      confirmLabel: 'Supprimer',
+    });
+    if (!ok) return;
     try {
       await api.delete(`/clients/${id}`);
       toast.success(t('clients.deleted'));
       loadClients();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Erreur suppression');
-    } finally {
-      setDeleteId(null);
     }
   };
 
@@ -218,11 +237,14 @@ export default function ClientList() {
           placeholder={t('clients.search')}
           className={`input-field pl-9 w-full ${search ? 'pr-9' : ''}`}
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => setSearch(e.target.value)}
         />
-        {search && (
+        {searching && (
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+        )}
+        {!searching && search && (
           <button
-            onClick={() => { setSearch(''); setPage(1); }}
+            onClick={() => { setSearch(''); setDebouncedSearch(''); setPage(1); setSearching(false); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -231,23 +253,56 @@ export default function ClientList() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <>
+          <div className="sm:hidden space-y-3">
+            {[...Array(5)].map((_, i) => <SkeletonClientCard key={i} />)}
+          </div>
+          <div className="hidden sm:block card overflow-hidden">
+            <div className="divide-y divide-gray-100">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="px-6 py-4 flex items-center gap-4">
+                  <div className="w-9 h-9 skeleton-shimmer rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="w-36 h-4 skeleton-shimmer rounded" />
+                    <div className="w-24 h-3 skeleton-shimmer rounded" />
+                  </div>
+                  <div className="w-48 h-4 skeleton-shimmer rounded hidden lg:block" />
+                  <div className="w-7 h-7 skeleton-shimmer rounded-full" />
+                  <div className="w-24 h-4 skeleton-shimmer rounded ml-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       ) : clients.length === 0 ? (
-        <div className="card text-center py-16">
-          <Users className="w-16 h-16 mx-auto text-gray-200 mb-4" />
-          <p className="text-gray-500 font-medium">{t('clients.noClients')}</p>
-          <Link to="/app/clients/new" className="btn-primary mt-4 inline-flex">
-            <Plus className="w-4 h-4" /> {t('clients.new')}
-          </Link>
+        <div className="card text-center py-16 px-8">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-primary-50 flex items-center justify-center">
+            <Users className="w-10 h-10 text-primary-300" />
+          </div>
+          {search ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun résultat</h3>
+              <p className="text-sm text-gray-400 mb-5">Aucun client ne correspond à votre recherche.</p>
+              <button onClick={() => setSearch('')} className="btn-secondary">Effacer la recherche</button>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Aucun client pour l'instant</h3>
+              <p className="text-sm text-gray-400 mb-6 max-w-xs mx-auto">
+                Ajoutez vos clients pour créer des factures rapidement.
+              </p>
+              <Link to="/app/clients/new" className="btn-primary inline-flex">
+                <Plus className="w-4 h-4" /> Ajouter un client
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <>
           {/* ── Vue mobile : cards ── */}
           <div className="sm:hidden space-y-3">
-            {clients.map(client => (
-              <div key={client.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            {clients.map((client, idx) => (
+              <div key={client.id} className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 animate-fade-up stagger-${Math.min(idx + 1, 6)}`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -289,19 +344,10 @@ export default function ClientList() {
                     className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
                     <Edit className="w-3.5 h-3.5" /> Modifier
                   </Link>
-                  {deleteId === client.id ? (
-                    <div className="flex gap-1 ml-auto">
-                      <button onClick={() => handleDelete(client.id)}
-                        className="px-2.5 py-1 text-xs bg-red-600 text-white rounded-lg">Oui</button>
-                      <button onClick={() => setDeleteId(null)}
-                        className="px-2.5 py-1 text-xs bg-gray-200 rounded-lg">Non</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setDeleteId(client.id)}
-                      className="flex items-center gap-1.5 text-xs font-medium text-red-500 ml-auto">
-                      <Trash2 className="w-3.5 h-3.5" /> Supprimer
-                    </button>
-                  )}
+                  <button onClick={() => handleDelete(client.id)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-red-500 ml-auto">
+                    <Trash2 className="w-3.5 h-3.5" /> Supprimer
+                  </button>
                 </div>
               </div>
             ))}
@@ -370,19 +416,10 @@ export default function ClientList() {
                             className="p-1.5 rounded hover:bg-primary-50 hover:text-primary-600 text-gray-400 transition-colors" title="Modifier">
                             <Edit className="w-4 h-4" />
                           </Link>
-                          {deleteId === client.id ? (
-                            <div className="flex gap-1">
-                              <button onClick={() => handleDelete(client.id)}
-                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700">Oui</button>
-                              <button onClick={() => setDeleteId(null)}
-                                className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Non</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setDeleteId(client.id)}
-                              className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-gray-400 transition-colors" title="Supprimer">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button onClick={() => handleDelete(client.id)}
+                            className="p-1.5 rounded hover:bg-red-50 hover:text-red-600 text-gray-400 transition-colors" title="Supprimer">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>

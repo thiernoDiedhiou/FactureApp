@@ -408,10 +408,8 @@ export default function Settings() {
                   placeholder="DigiTech Solutions SARL" />
               </div>
               <div className="sm:col-span-2">
-                <label className="label">
-                  Secteur / Activité
-                  <span className="text-gray-400 text-xs ml-1 font-normal">— affiché sous le nom sur les documents</span>
-                </label>
+                <label className="label">Secteur / Activité</label>
+                <p className="text-xs text-gray-400 -mt-2 mb-1">Affiché sous le nom sur les documents</p>
                 <input type="text" className="input-field" value={form.activity}
                   onChange={(e) => f('activity', e.target.value)}
                   placeholder="Commerce Général Import - Export" />

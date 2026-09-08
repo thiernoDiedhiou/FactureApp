@@ -152,23 +152,40 @@ const inviteMember = async (req, res) => {
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) {
-    // Utilisateur inexistant → envoyer un lien d'invitation pour créer un compte
-    const jwt = require('jsonwebtoken');
-    const inviteToken = jwt.sign(
-      { email, orgId: req.organizationId, orgName: org.name, role, inviterName: req.user.name },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/accept-invite?token=${inviteToken}`;
+    // Utilisateur inexistant → créer le compte automatiquement + envoyer identifiants par email
+    const crypto = require('crypto');
+    const bcrypt = require('bcryptjs');
+
+    const tempPassword = crypto.randomBytes(8).toString('base64url').slice(0, 12);
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
+    const userName = email.split('@')[0];
+
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        name: userName,
+        password: hashedPassword,
+        isEmailVerified: true, // Auto-vérifié : invité par un administrateur
+      }
+    });
+
+    await prisma.organizationMember.create({
+      data: { organizationId: req.organizationId, userId: newUser.id, role }
+    });
+
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`;
 
     try {
       await sendInvitationEmail({
         to: email,
-        inviteeName: null,
+        inviteeName: userName,
         organizationName: org.name,
         role,
         inviterName: req.user.name,
-        inviteUrl
+        inviteUrl: loginUrl,
+        isNewUser: true,
+        tempEmail: email,
+        tempPassword
       });
     } catch (emailErr) {
       console.warn('Email invitation non envoyé:', emailErr.message);
@@ -176,7 +193,7 @@ const inviteMember = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: `Invitation envoyée à ${email}. La personne recevra un lien pour créer son compte et rejoindre votre organisation.`
+      message: `Compte créé et invitation envoyée à ${email}. Les identifiants de connexion ont été envoyés par email.`
     });
   }
 
@@ -200,7 +217,8 @@ const inviteMember = async (req, res) => {
       inviteeName: user.name,
       organizationName: org.name,
       role,
-      inviterName: req.user.name
+      inviterName: req.user.name,
+      inviteUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`
     });
   } catch (emailErr) {
     console.warn('Email invitation non envoyé:', emailErr.message);
