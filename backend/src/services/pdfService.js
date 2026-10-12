@@ -95,20 +95,17 @@ function renderClassique(doc, document, settings, primaryColor) {
   // Colonne droite (N° doc) démarre à x=400 — on réserve 10pt de marge
   const companyW = 390 - companyX;
 
-  // doc.y après text() = début de la DERNIÈRE ligne rendue (pas après).
-  // Pour positionner le texte suivant après la dernière ligne :
-  //   y = doc.y + currentLineHeight(true) + gap
-  const nextY = (gap = 2) => { y = doc.y + doc.currentLineHeight(true) + gap; };
-
+  // doc.y après text() = position APRÈS la dernière ligne rendue (vérifié empiriquement)
+  // Donc y = doc.y + 2 positionne le texte suivant avec 2pt d'espace
   doc.fontSize(16).font('Helvetica-Bold')
     .text(settings?.companyName || 'Mon Entreprise', companyX, y, { width: companyW });
-  nextY();
+  y = doc.y + 2;
   doc.fontSize(9).font('Helvetica').fillColor('#555555');
-  if (settings?.activity) { doc.text(settings.activity, companyX, y, { width: companyW }); nextY(); }
-  if (settings?.address)  { doc.text(settings.address,  companyX, y, { width: companyW }); nextY(); }
-  if (settings?.phone)    { doc.text(`Tél: ${settings.phone}`, companyX, y, { width: companyW }); nextY(); }
-  if (settings?.email)    { doc.text(settings.email,    companyX, y, { width: companyW }); nextY(); }
-  if (settings?.ninea)    { doc.text(`NINEA: ${settings.ninea}`, companyX, y, { width: companyW }); nextY(); }
+  if (settings?.activity) { doc.text(settings.activity, companyX, y, { width: companyW }); y = doc.y + 2; }
+  if (settings?.address)  { doc.text(settings.address,  companyX, y, { width: companyW }); y = doc.y + 2; }
+  if (settings?.phone)    { doc.text(`Tél: ${settings.phone}`, companyX, y, { width: companyW }); y = doc.y + 2; }
+  if (settings?.email)    { doc.text(settings.email,    companyX, y, { width: companyW }); y = doc.y + 2; }
+  if (settings?.ninea)    { doc.text(`NINEA: ${settings.ninea}`, companyX, y, { width: companyW }); y = doc.y + 2; }
 
   // Type et numéro document
   doc.fillColor('#000000');
@@ -182,47 +179,55 @@ function renderClassique(doc, document, settings, primaryColor) {
 
 // ─── Template Moderne ────────────────────────────────────────────────────────
 function renderModerne(doc, document, settings, primaryColor) {
-  // En-tête colorée
-  doc.rect(0, 0, doc.page.width, 100).fill(primaryColor);
-
-  // Logo
+  // Résoudre le logo AVANT de calculer la hauteur du header
   let logoWidth = 0;
+  let logoFile = null;
   if (settings?.logoPath) {
-    const logoFile = path.join(__dirname, '../../', settings.logoPath);
-    if (fs.existsSync(logoFile)) {
-      doc.image(logoFile, 50, 20, { width: 80, height: 60, fit: [80, 60] });
-      logoWidth = 100;
-    }
+    const f = path.join(__dirname, '../../', settings.logoPath);
+    if (fs.existsSync(f)) { logoFile = f; logoWidth = 100; }
   }
 
-  // Nom entreprise dans le header (colonne gauche, colonne droite à x=300)
-  // Header fixe 100px — on tronque sur 1 ligne avec ellipsis
   const headerLeftW = Math.max(60, 290 - logoWidth);
+  const companyName = settings?.companyName || 'Mon Entreprise';
+
+  // Mesurer la hauteur du nom d'entreprise avant de dessiner le rectangle
+  doc.fontSize(18).font('Helvetica-Bold');
+  const companyNameH = doc.heightOfString(companyName, { width: headerLeftW });
+  // activity sur 1 ligne (8pt ≈ 10px) + address sur 1 ligne (9pt ≈ 11px)
+  let neededH = 25 + companyNameH + 2;
+  if (settings?.activity) neededH += 10 + 2;
+  if (settings?.address)  neededH += 11 + 2;
+  const headerHeight = Math.max(100, neededH + 8);
+
+  // En-tête colorée à hauteur dynamique
+  doc.rect(0, 0, doc.page.width, headerHeight).fill(primaryColor);
+
+  // Logo
+  if (logoFile) doc.image(logoFile, 50, 20, { width: 80, height: 60, fit: [80, 60] });
+
+  // Nom entreprise (wrapping naturel — doc.y suit la dernière ligne rendue)
   doc.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold')
-    .text(settings?.companyName || 'Mon Entreprise', 50 + logoWidth, 28, {
-      width: headerLeftW, lineBreak: false, ellipsis: true
-    });
-  let headerInfoY = 50;
+    .text(companyName, 50 + logoWidth, 25, { width: headerLeftW });
+  let headerInfoY = doc.y + 2;
   if (settings?.activity) {
     doc.fontSize(8).font('Helvetica').text(settings.activity, 50 + logoWidth, headerInfoY, {
       width: headerLeftW, lineBreak: false, ellipsis: true
     });
-    headerInfoY += 12;
+    headerInfoY = doc.y + 2;
   }
   if (settings?.address) {
-    doc.fontSize(9).font('Helvetica')
-      .text(settings.address, 50 + logoWidth, headerInfoY, {
-        width: headerLeftW, lineBreak: false, ellipsis: true
-      });
+    doc.fontSize(9).font('Helvetica').text(settings.address, 50 + logoWidth, headerInfoY, {
+      width: headerLeftW, lineBreak: false, ellipsis: true
+    });
   }
 
-  // Type document
+  // Type document (ancré en haut à droite, indépendant de la hauteur du header)
   doc.fontSize(24).font('Helvetica-Bold')
     .text(TYPE_LABELS[document.type] || 'DOCUMENT', 300, 25, { align: 'right', width: 245 });
   doc.fontSize(11).font('Helvetica')
     .text(`N° ${document.number}`, 300, 58, { align: 'right', width: 245 });
 
-  let y = 120;
+  let y = headerHeight + 20;
 
   // Infos document et client
   doc.fillColor('#000000');
@@ -242,7 +247,7 @@ function renderModerne(doc, document, settings, primaryColor) {
   if (document.client?.email) doc.text(document.client.email, 60, y), y += 11;
 
   // Bloc dates
-  let dy = 120;
+  let dy = headerHeight + 20;
   doc.rect(305, dy, 240, 90).fill('#f8f9fa').stroke('#e0e0e0');
   dy += 8;
   doc.fontSize(8).font('Helvetica-Bold').fillColor(primaryColor).text('DÉTAILS', 315, dy);
@@ -299,14 +304,16 @@ function renderCompact(doc, document, settings, primaryColor) {
   const compactLeftW = 245;
   doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000')
     .text(settings?.companyName || 'Mon Entreprise', 50, y, { width: compactLeftW, lineBreak: false, ellipsis: true });
+  // Capturer doc.y AVANT le type document (qui réinitialise doc.y à 1 ligne)
+  const afterCompanyY = doc.y;
   doc.fontSize(16).font('Helvetica-Bold')
     .text(TYPE_LABELS[document.type] || 'DOCUMENT', 300, y, { align: 'right', width: 245 });
-
-  y += 18;
+  // Prendre le max des 2 colonnes pour ne pas chevaucher le nom sur 2 lignes
+  y = Math.max(afterCompanyY, doc.y) + 2;
   doc.fontSize(8).font('Helvetica');
   if (settings?.activity) {
     doc.fillColor('#555555').text(settings.activity, 50, y, { width: compactLeftW });
-    y = doc.y + doc.currentLineHeight(true) + 2;
+    y = doc.y + 2;
   }
   doc.fillColor(primaryColor);
   if (settings?.phone) doc.text(`Tél: ${settings.phone}`, 50, y, { width: compactLeftW });
