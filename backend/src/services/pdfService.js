@@ -95,21 +95,20 @@ function renderClassique(doc, document, settings, primaryColor) {
   // Colonne droite (N° doc) démarre à x=400 — on réserve 10pt de marge
   const companyW = 390 - companyX;
 
-  // Helper : avance y du hauteur RÉELLE du texte (doc.y après text() = début dernière ligne, pas après)
-  const textBlock = (text, x, opts) => {
-    const h = doc.heightOfString(text, { width: opts.width || companyW });
-    doc.text(text, x, y, opts);
-    y += h + 2;
-  };
+  // doc.y après text() = début de la DERNIÈRE ligne rendue (pas après).
+  // Pour positionner le texte suivant après la dernière ligne :
+  //   y = doc.y + currentLineHeight(true) + gap
+  const nextY = (gap = 2) => { y = doc.y + doc.currentLineHeight(true) + gap; };
 
-  doc.fontSize(16).font('Helvetica-Bold');
-  textBlock(settings?.companyName || 'Mon Entreprise', companyX, { width: companyW });
+  doc.fontSize(16).font('Helvetica-Bold')
+    .text(settings?.companyName || 'Mon Entreprise', companyX, y, { width: companyW });
+  nextY();
   doc.fontSize(9).font('Helvetica').fillColor('#555555');
-  if (settings?.activity) textBlock(settings.activity, companyX, { width: companyW });
-  if (settings?.address)  textBlock(settings.address,  companyX, { width: companyW });
-  if (settings?.phone)    textBlock(`Tél: ${settings.phone}`, companyX, { width: companyW });
-  if (settings?.email)    textBlock(settings.email,    companyX, { width: companyW });
-  if (settings?.ninea)    textBlock(`NINEA: ${settings.ninea}`, companyX, { width: companyW });
+  if (settings?.activity) { doc.text(settings.activity, companyX, y, { width: companyW }); nextY(); }
+  if (settings?.address)  { doc.text(settings.address,  companyX, y, { width: companyW }); nextY(); }
+  if (settings?.phone)    { doc.text(`Tél: ${settings.phone}`, companyX, y, { width: companyW }); nextY(); }
+  if (settings?.email)    { doc.text(settings.email,    companyX, y, { width: companyW }); nextY(); }
+  if (settings?.ninea)    { doc.text(`NINEA: ${settings.ninea}`, companyX, y, { width: companyW }); nextY(); }
 
   // Type et numéro document
   doc.fillColor('#000000');
@@ -306,9 +305,8 @@ function renderCompact(doc, document, settings, primaryColor) {
   y += 18;
   doc.fontSize(8).font('Helvetica');
   if (settings?.activity) {
-    const actH = doc.heightOfString(settings.activity, { width: compactLeftW });
     doc.fillColor('#555555').text(settings.activity, 50, y, { width: compactLeftW });
-    y += actH + 2;
+    y = doc.y + doc.currentLineHeight(true) + 2;
   }
   doc.fillColor(primaryColor);
   if (settings?.phone) doc.text(`Tél: ${settings.phone}`, 50, y, { width: compactLeftW });
