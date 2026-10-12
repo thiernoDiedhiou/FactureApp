@@ -92,15 +92,32 @@ function renderClassique(doc, document, settings, primaryColor) {
 
   // Informations entreprise
   const companyX = settings?.logoPath ? 160 : 50;
+  // Colonne droite (N° doc) démarre à x=400 — on réserve 10pt de marge
+  const companyW = 390 - companyX;
   doc.fontSize(16).font('Helvetica-Bold')
-    .text(settings?.companyName || 'Mon Entreprise', companyX, y);
-  y += 20;
+    .text(settings?.companyName || 'Mon Entreprise', companyX, y, { width: companyW });
+  y = doc.y + 2;
   doc.fontSize(9).font('Helvetica').fillColor('#555555');
-  if (settings?.activity) doc.text(settings.activity, companyX, y), y += 12;
-  if (settings?.address) doc.text(settings.address, companyX, y), y += 12;
-  if (settings?.phone) doc.text(`Tél: ${settings.phone}`, companyX, y), y += 12;
-  if (settings?.email) doc.text(settings.email, companyX, y), y += 12;
-  if (settings?.ninea) doc.text(`NINEA: ${settings.ninea}`, companyX, y), y += 12;
+  if (settings?.activity) {
+    doc.text(settings.activity, companyX, y, { width: companyW });
+    y = doc.y + 2;
+  }
+  if (settings?.address) {
+    doc.text(settings.address, companyX, y, { width: companyW });
+    y = doc.y + 2;
+  }
+  if (settings?.phone) {
+    doc.text(`Tél: ${settings.phone}`, companyX, y, { width: companyW });
+    y = doc.y + 2;
+  }
+  if (settings?.email) {
+    doc.text(settings.email, companyX, y, { width: companyW });
+    y = doc.y + 2;
+  }
+  if (settings?.ninea) {
+    doc.text(`NINEA: ${settings.ninea}`, companyX, y, { width: companyW });
+    y = doc.y + 2;
+  }
 
   // Type et numéro document
   doc.fillColor('#000000');
@@ -187,16 +204,26 @@ function renderModerne(doc, document, settings, primaryColor) {
     }
   }
 
-  // Nom entreprise dans le header
+  // Nom entreprise dans le header (colonne gauche, colonne droite à x=300)
+  // Header fixe 100px — on tronque sur 1 ligne avec ellipsis
+  const headerLeftW = Math.max(60, 290 - logoWidth);
   doc.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold')
-    .text(settings?.companyName || 'Mon Entreprise', 50 + logoWidth, 28);
+    .text(settings?.companyName || 'Mon Entreprise', 50 + logoWidth, 28, {
+      width: headerLeftW, lineBreak: false, ellipsis: true
+    });
   let headerInfoY = 50;
   if (settings?.activity) {
-    doc.fontSize(8).font('Helvetica').text(settings.activity, 50 + logoWidth, headerInfoY);
+    doc.fontSize(8).font('Helvetica').text(settings.activity, 50 + logoWidth, headerInfoY, {
+      width: headerLeftW, lineBreak: false, ellipsis: true
+    });
     headerInfoY += 12;
   }
-  doc.fontSize(9).font('Helvetica')
-    .text(settings?.address || '', 50 + logoWidth, headerInfoY);
+  if (settings?.address) {
+    doc.fontSize(9).font('Helvetica')
+      .text(settings.address, 50 + logoWidth, headerInfoY, {
+        width: headerLeftW, lineBreak: false, ellipsis: true
+      });
+  }
 
   // Type document
   doc.fontSize(24).font('Helvetica-Bold')
@@ -277,23 +304,24 @@ function renderModerne(doc, document, settings, primaryColor) {
 function renderCompact(doc, document, settings, primaryColor) {
   let y = 30;
 
-  // En-tête compact sur 2 colonnes
+  // En-tête compact sur 2 colonnes (colonne gauche bornée à x=245)
+  const compactLeftW = 245;
   doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000')
-    .text(settings?.companyName || 'Mon Entreprise', 50, y);
+    .text(settings?.companyName || 'Mon Entreprise', 50, y, { width: compactLeftW, lineBreak: false, ellipsis: true });
   doc.fontSize(16).font('Helvetica-Bold')
     .text(TYPE_LABELS[document.type] || 'DOCUMENT', 300, y, { align: 'right', width: 245 });
 
   y += 18;
   doc.fontSize(8).font('Helvetica');
   if (settings?.activity) {
-    doc.fillColor('#555555').text(settings.activity, 50, y);
-    y += 11;
+    doc.fillColor('#555555').text(settings.activity, 50, y, { width: compactLeftW });
+    y = doc.y + 2;
   }
   doc.fillColor(primaryColor);
-  if (settings?.phone) doc.text(`Tél: ${settings.phone}`, 50, y);
+  if (settings?.phone) doc.text(`Tél: ${settings.phone}`, 50, y, { width: compactLeftW });
   doc.text(`N° ${document.number}`, 300, y, { align: 'right', width: 245 });
   y += 11;
-  if (settings?.email) doc.text(settings.email, 50, y);
+  if (settings?.email) doc.text(settings.email, 50, y, { width: compactLeftW });
   doc.text(`Date: ${fmtDate(document.issuedDate)}`, 300, y, { align: 'right', width: 245 });
   y += 11;
   const nineaRccm = [settings?.ninea && `NINEA: ${settings.ninea}`, settings?.rccm && `RCCM: ${settings.rccm}`].filter(Boolean).join(' | ');
